@@ -1,0 +1,3439 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motion & Vector Studio Pro — Adobe Stock Edition</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Pure JS ISO-BMFF MP4 Muxer (Crash-Safe Adobe Stock H.264 Container) -->
+  <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
+  <!-- Pure WebAssembly H.264 MP4 Fallback Encoder (Guarantees .mp4 even without WebCodecs H.264) -->
+  <script src="https://cdn.jsdelivr.net/npm/h264-mp4-encoder@1.0.12/embuild/dist/h264-mp4-encoder.web.js"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            studio: {
+              bg: '#0B0D17',
+              panel: '#131726',
+              card: '#181D30',
+              input: '#0E121E',
+              border: '#232942',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Custom Studio Scrollbars & Visual Patterns */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #0B0D17;
+      color: #E2E8F0;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B0D17;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27304F;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3B4875;
+    }
+
+    /* Transparent Checkerboard Pattern for Viewport */
+    .checkerboard-bg {
+      background-color: #141824;
+      background-image:
+        linear-gradient(45deg, #1E2436 25%, transparent 25%),
+        linear-gradient(-45deg, #1E2436 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1E2436 75%),
+        linear-gradient(-45deg, transparent 75%, #1E2436 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+    }
+
+    /* Subtle Studio Grid Background */
+    .studio-grid-bg {
+      background-image: radial-gradient(rgba(99, 102, 241, 0.12) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    /* Glowing CTA Button Effect */
+    .btn-generate-glow {
+      background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #06B6D4 100%);
+      box-shadow: 0 8px 25px -5px rgba(99, 102, 241, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-generate-glow:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 30px -4px rgba(99, 102, 241, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.22) inset;
+      filter: brightness(1.06);
+    }
+    .btn-generate-glow:active {
+      transform: translateY(0px);
+    }
+
+    .btn-render-glow {
+      background: linear-gradient(135deg, #059669 0%, #10B981 55%, #0D9488 100%);
+      box-shadow: 0 8px 24px -5px rgba(16, 185, 129, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+      transition: all 0.2s ease;
+    }
+    .btn-render-glow:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px -4px rgba(16, 185, 129, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+      filter: brightness(1.05);
+    }
+    .btn-render-glow:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-indigo-500/30 selection:text-indigo-200">
+
+  <!-- ==================== HEADER NAVIGATION ==================== -->
+  <header class="sticky top-0 z-40 bg-[#0B0D17]/95 backdrop-blur-md border-b border-studio-border">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-600 to-cyan-500 p-[1px] shrink-0 shadow-lg shadow-indigo-500/20">
+          <div class="w-full h-full bg-[#0E121E] rounded-[11px] flex items-center justify-center">
+            <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="19" cy="5" r="2.5" class="text-purple-400" fill="currentColor" />
+            </svg>
+          </div>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm sm:text-base font-bold tracking-tight text-white truncate">
+              Motion & Vector Studio Pro
+            </h1>
+            <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+              Adobe Stock Edition
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 truncate hidden sm:block">
+            Microstock Asset Synthesizer • Native 4K CaptureStream & Pure SVG 1.1 Engine
+          </p>
+        </div>
+      </div>
+
+      <!-- Status Navigation Tabs -->
+      <nav class="flex items-center bg-[#131726] p-1 rounded-xl border border-studio-border" aria-label="Workspace Tabs">
+        <button id="tab-btn-create" onclick="switchWorkspaceTab('create')"
+          class="tab-btn active px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="3" />
+            <path d="M9 3v18" />
+          </svg>
+          <span>Create</span>
+        </button>
+        <button id="tab-btn-presets" onclick="switchWorkspaceTab('presets')"
+          class="tab-btn px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 text-slate-400 hover:text-white">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round" />
+          </svg>
+          <span>Presets</span>
+          <span id="header-preset-count" class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300">4</span>
+        </button>
+        <button id="tab-btn-queue" onclick="switchWorkspaceTab('queue')"
+          class="tab-btn px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 text-slate-400 hover:text-white">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round" />
+            <polyline points="7 10 12 15 17 10" stroke-linecap="round" stroke-linejoin="round" />
+            <line x1="12" y1="15" x2="12" y2="3" stroke-linecap="round" />
+          </svg>
+          <span class="hidden sm:inline">Export Queue</span>
+          <span class="sm:hidden">Queue</span>
+          <span id="header-export-count" class="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300">0</span>
+        </button>
+      </nav>
+
+      <!-- Gemini API Key Settings Button -->
+      <div class="flex items-center gap-2">
+        <button onclick="openApiKeyModal()"
+          class="px-3 py-2 rounded-xl bg-[#131726] hover:bg-[#1A2036] border border-studio-border text-xs font-medium text-slate-200 flex items-center gap-2 transition-colors">
+          <span id="api-status-dot" class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span class="hidden md:inline">Gemini API Key</span>
+          <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== TOAST NOTIFICATION CONTAINER ==================== -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- ==================== MAIN WORKSPACE: CREATE (2-PANEL SPLIT) ==================== -->
+  <main id="workspace-create" class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-5">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+      <!-- ==================== PANEL 1 (KIRI): INPUT DATA & MANAJEMEN ASET ==================== -->
+      <section class="lg:col-span-5 bg-studio-panel rounded-2xl border border-studio-border p-4 sm:p-5 flex flex-col gap-5 shadow-xl shadow-black/30">
+        <!-- Panel Header -->
+        <div class="flex items-center justify-between border-b border-studio-border pb-3.5">
+          <div class="flex items-center gap-2.5">
+            <span class="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-xs font-bold flex items-center justify-center">1</span>
+            <div>
+              <h2 class="text-sm font-bold text-white tracking-tight">Input Data & Manajemen Aset</h2>
+              <p class="text-[11px] text-slate-400">Pilih tipe aset, buat via Prompt/AI, atau tempel kode</p>
+            </div>
+          </div>
+          <span id="panel1-mode-pill" class="px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+            MOTION MODE
+          </span>
+        </div>
+
+        <!-- a. Pemilihan Jenis Output (Output Mode Selector) -->
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            a. Jenis Output Adobe Stock
+          </label>
+          <div class="grid grid-cols-2 gap-2.5">
+            <button type="button" id="mode-btn-motion" onclick="setOutputMode('motion')"
+              class="p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 bg-indigo-600/15 border-indigo-500 text-white shadow-sm">
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/25 text-indigo-300 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2.5" />
+                  <polygon points="10 9 15 12 10 15 10 9" fill="currentColor" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <div class="text-xs font-bold leading-tight">Video Motion</div>
+                <div class="text-[10px] text-indigo-200/80 mt-0.5 truncate">HTML5 Animation</div>
+              </div>
+            </button>
+
+            <button type="button" id="mode-btn-vector" onclick="setOutputMode('vector')"
+              class="p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 bg-studio-card/70 border-studio-border text-slate-300 hover:border-slate-600">
+              <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                  <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                  <circle cx="11" cy="11" r="2" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <div class="text-xs font-bold leading-tight">Gambar Vector</div>
+                <div class="text-[10px] text-slate-400 mt-0.5 truncate">Pure .SVG 4096px</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- b. Kolom 1 — Input berbasis Prompt (AI / Procedural Generator) -->
+        <div class="bg-studio-card/75 rounded-xl border border-studio-border p-3.5">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-indigo-300 block">
+                b. Kolom 1 — Prompt Generator
+              </span>
+              <span class="text-[11px] text-slate-400">AI Gemini + Procedural Synthesizer</span>
+            </div>
+            <button type="button" id="toggle-prompt-btn" onclick="toggleDrawer('prompt')"
+              class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm">
+              <span>+ Add New Prompt</span>
+            </button>
+          </div>
+
+          <!-- Collapsible Prompt Drawer -->
+          <div id="drawer-prompt" class="hidden mt-3.5 pt-3.5 border-t border-studio-border space-y-3">
+            <div>
+              <label for="prompt-text-input" class="block text-xs font-medium text-slate-300 mb-1">
+                Deskripsi Visual / Konsep Animasi atau Vektor
+              </label>
+              <textarea id="prompt-text-input" rows="3"
+                placeholder="Contoh: Glowing futuristic cyber radar HUD rings pulsing smoothly on chroma green screen..."
+                class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs text-white p-2.5 outline-none placeholder:text-slate-500"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label for="prompt-style-select" class="block text-[11px] font-medium text-slate-300 mb-1">
+                  Gaya Visual (Visual Style)
+                </label>
+                <select id="prompt-style-select"
+                  class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-indigo-500 text-xs text-white p-2.5 outline-none">
+                  <option value="chroma_green">Chroma Key Green Screen (#00FF00)</option>
+                  <option value="flat_vector">Flat Vector Pop</option>
+                  <option value="luxury_gold">Luxury Gold Particles</option>
+                  <option value="geometric_abstract">Geometric Abstract</option>
+                  <option value="isometric_icon">Isometric Icon</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="prompt-palette-select" class="block text-[11px] font-medium text-slate-300 mb-1">
+                  Palet Warna Microstock
+                </label>
+                <select id="prompt-palette-select"
+                  class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-indigo-500 text-xs text-white p-2.5 outline-none">
+                  <option value="chroma_emerald">Chroma Green (#00FF00) + Cyan/White</option>
+                  <option value="luxury_gold">Obsidian + 24K Gold & Amber</option>
+                  <option value="cyber_neon">Deep Space + Neon Cyan & Violet</option>
+                  <option value="corporate_blue">Clean White + Corporate Cobalt</option>
+                  <option value="sunset_pop">Vibrant Coral + Sunset Gold & Teal</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-1">
+              <button type="button" onclick="toggleDrawer('prompt')"
+                class="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white transition-colors">
+                Batal
+              </button>
+              <button type="button" id="btn-submit-prompt" onclick="handleCreateFromPrompt()"
+                class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md">
+                <svg id="prompt-spinner" class="hidden w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>Susun Kode & Tambah ke Antrean</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- c. Kolom 2 — Input Kode HTML / SVG Manual -->
+        <div class="bg-studio-card/75 rounded-xl border border-studio-border p-3.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-cyan-300 block">
+                c. Kolom 2 — Kode HTML / SVG Manual
+              </span>
+              <span class="text-[11px] text-slate-400">Paste kode atau unggah file .html / .svg</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <label class="cursor-pointer px-2.5 py-1.5 rounded-lg bg-[#0E121E] hover:bg-slate-800 border border-studio-border text-slate-300 text-xs font-medium transition-colors flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span>Upload</span>
+                <input type="file" id="manual-file-upload" accept=".html,.htm,.svg" class="hidden" onchange="handleFileUpload(event)" />
+              </label>
+              <button type="button" id="toggle-code-btn" onclick="toggleDrawer('code')"
+                class="px-3 py-1.5 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/40 text-cyan-200 text-xs font-semibold transition-colors">
+                + Add New Code
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible Manual Code Drawer -->
+          <div id="drawer-code" class="hidden mt-3.5 pt-3.5 border-t border-studio-border space-y-3">
+            <div>
+              <label for="manual-filename-input" class="block text-xs font-medium text-slate-300 mb-1">
+                Nama File Aset (Tanpa Spasi Direkomendasikan)
+              </label>
+              <input type="text" id="manual-filename-input" placeholder="Contoh: Custom_Particle_Loop_4K"
+                class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-cyan-500 text-xs font-mono text-white px-3 py-2 outline-none placeholder:text-slate-500" />
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="manual-code-textarea" class="text-xs font-medium text-slate-300">
+                  Kode HTML5 Canvas atau XML SVG
+                </label>
+                <span id="code-char-counter" class="text-[10px] font-mono text-slate-400">0 chars</span>
+              </div>
+              <textarea id="manual-code-textarea" rows="5" oninput="updateCodeCharCount()"
+                placeholder="Tempel kode lengkap <!DOCTYPE html>...<canvas>...</canvas> atau <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4096 4096'>...</svg>"
+                class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-cyan-500 text-[11px] font-mono text-cyan-100 p-2.5 outline-none placeholder:text-slate-600 leading-relaxed"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2">
+              <button type="button" onclick="toggleDrawer('code')"
+                class="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white transition-colors">
+                Batal
+              </button>
+              <button type="button" onclick="handleSaveManualCode()"
+                class="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md">
+                Simpan ke Daftar Antrean
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- d. Daftar Antrean & Preset (Animation & Vector Library) -->
+        <div class="flex-1 flex flex-col min-h-[250px]">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              d. Daftar Antrean & Preset Library
+            </label>
+            <div class="flex items-center gap-2">
+              <span id="library-count-badge" class="px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                4 file terdeteksi
+              </span>
+              <button type="button" id="btn-clear-history" onclick="handleClearHistory()"
+                class="px-2 py-0.5 rounded-md text-[10px] font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition-all">
+                Clear History
+              </button>
+            </div>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative mb-2.5">
+            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input type="text" id="preset-search-input" oninput="renderAssetLibrary()"
+              placeholder="Search preset..."
+              class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-indigo-500 text-xs text-white pl-8 pr-3 py-2 outline-none placeholder:text-slate-500" />
+          </div>
+
+          <!-- Scrollable Asset List -->
+          <div id="asset-library-list" class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+
+        <!-- e. Tombol Eksekusi "GENERATE" -->
+        <div class="pt-1">
+          <button type="button" id="btn-main-generate" onclick="executeGenerate()"
+            class="w-full py-3.5 px-5 rounded-xl btn-generate-glow text-white font-bold text-sm tracking-wide flex items-center justify-center gap-2.5 cursor-pointer">
+            <svg class="w-4 h-4 text-cyan-200" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            <span>GENERATE & LOAD LIVE PREVIEW</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ==================== PANEL 2 (KANAN): LIVE PREVIEW, KURASI & RENDER ENGINE ==================== -->
+      <section class="lg:col-span-7 flex flex-col gap-5">
+
+        <!-- BAGIAN ATAS: LIVE PREVIEW VIEWPORT -->
+        <div class="bg-studio-panel rounded-2xl border border-studio-border p-4 sm:p-5 shadow-xl shadow-black/30">
+          <!-- Preview Header & Real-time Telemetry -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-3.5 border-b border-studio-border">
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs font-bold flex items-center justify-center">2</span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="text-sm font-bold text-white tracking-tight">Live Preview Viewport</h2>
+                  <span id="active-asset-badge" class="px-2 py-0.5 rounded-md text-[10px] font-mono bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 truncate max-w-[180px] sm:max-w-[260px]">
+                    Chroma_HUD_Radar_60fps
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live FPS Counter & Resolution Pill -->
+            <div class="flex items-center gap-2">
+              <div class="px-2.5 py-1 rounded-lg bg-[#0E121E] border border-studio-border flex items-center gap-1.5">
+                <span id="fps-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span id="live-fps-counter" class="text-[11px] font-mono font-semibold text-emerald-300">60.0 FPS</span>
+              </div>
+              <div id="preview-dim-badge" class="px-2.5 py-1 rounded-lg bg-[#0E121E] border border-studio-border text-[11px] font-mono text-slate-300">
+                1920×1080
+              </div>
+            </div>
+          </div>
+
+          <!-- Responsive Viewport Stage -->
+          <div class="my-3.5 w-full rounded-xl border border-studio-border bg-[#080A12] p-3 sm:p-4 flex items-center justify-center min-h-[290px] sm:min-h-[350px] relative overflow-hidden studio-grid-bg">
+            <!-- Aspect-ratio adaptive frame container -->
+            <div id="preview-aspect-wrapper"
+              class="relative w-full max-w-[640px] aspect-video rounded-lg overflow-hidden shadow-2xl border border-white/10 transition-all duration-300 flex items-center justify-center"
+              style="background-color: #00FF00;">
+              <!-- Motion Iframe Host -->
+              <iframe id="live-preview-iframe" title="Live Motion Preview"
+                sandbox="allow-scripts"
+                class="w-full h-full border-0 block"></iframe>
+              <!-- Vector SVG Host -->
+              <div id="live-preview-svg-host"
+                class="hidden w-full h-full flex items-center justify-center p-2"></div>
+            </div>
+          </div>
+
+          <!-- Viewport Controls: Play/Pause, Restart, Background Swatches -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <!-- Playback Controls -->
+            <div class="flex items-center gap-2">
+              <button type="button" id="btn-play-pause" onclick="togglePlayback()"
+                class="px-3 py-1.5 rounded-xl bg-studio-card hover:bg-slate-800 border border-studio-border text-xs font-semibold text-white flex items-center gap-1.5 transition-colors">
+                <svg id="icon-pause" class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+                <svg id="icon-play" class="hidden w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                <span id="play-pause-label">Pause</span>
+              </button>
+
+              <button type="button" onclick="restartPreviewFrame()"
+                class="px-3 py-1.5 rounded-xl bg-studio-card hover:bg-slate-800 border border-studio-border text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors">
+                <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M3 3v5h5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Restart Frame</span>
+              </button>
+            </div>
+
+            <!-- Canvas Background Swatch Selector -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[11px] font-medium text-slate-400">Backdrop:</span>
+              <button type="button" onclick="setViewportBackground('#00FF00', 'Chroma Green #00FF00')" title="Chroma Key Green Screen (#00FF00)"
+                class="w-6 h-6 rounded-lg border-2 border-white/80 shadow-sm transition-transform hover:scale-110"
+                style="background-color: #00FF00;"></button>
+              <button type="button" onclick="setViewportBackground('#0000FF', 'Chroma Blue #0000FF')" title="Chroma Key Blue Screen (#0000FF)"
+                class="w-6 h-6 rounded-lg border border-white/30 shadow-sm transition-transform hover:scale-110"
+                style="background-color: #0000FF;"></button>
+              <button type="button" onclick="setViewportBackground('transparent', 'Transparent Checkerboard')" title="Transparent Checkerboard"
+                class="w-6 h-6 rounded-lg border border-white/30 checkerboard-bg shadow-sm transition-transform hover:scale-110"></button>
+              <button type="button" onclick="setViewportBackground('#0B0D17', 'Studio Obsidian #0B0D17')" title="Studio Obsidian (#0B0D17)"
+                class="w-6 h-6 rounded-lg border border-white/30 shadow-sm transition-transform hover:scale-110"
+                style="background-color: #0B0D17;"></button>
+              <label title="Custom Backdrop Color"
+                class="w-6 h-6 rounded-lg border border-white/30 overflow-hidden cursor-pointer flex items-center justify-center bg-gradient-to-tr from-pink-500 via-amber-400 to-cyan-400 hover:scale-110 transition-transform">
+                <input type="color" id="custom-bg-picker" value="#1E1B4B" oninput="setViewportBackground(this.value, 'Custom ' + this.value)"
+                  class="opacity-0 w-full h-full cursor-pointer" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- BAGIAN BAWAH: ADOBE STOCK SAFE EXPORT & RENDER ENGINE -->
+        <div class="bg-studio-panel rounded-2xl border border-studio-border p-4 sm:p-5 shadow-xl shadow-black/30 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-studio-border pb-3">
+            <div>
+              <h3 class="text-sm font-bold text-white tracking-tight">Adobe Stock Safe Export & Render Engine</h3>
+              <p class="text-[11px] text-slate-400">Parameter kurasi teknis otomatis sesuai standar kontributor Adobe Stock</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              QC Verified
+            </span>
+          </div>
+
+          <!-- ========== VIDEO MOTION EXPORT PARAMETERS ========== -->
+          <div id="export-params-motion" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- Aspect Ratio -->
+            <div>
+              <label for="motion-aspect-select" class="block text-[11px] font-semibold text-slate-300 mb-1">
+                Aspect Ratio
+              </label>
+              <select id="motion-aspect-select" onchange="updateExportSpecs()"
+                class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-indigo-500 text-xs text-white p-2.5 outline-none">
+                <option value="16:9">Landscape (16:9)</option>
+                <option value="9:16">Vertical (9:16)</option>
+                <option value="1:1">Square (1:1)</option>
+              </select>
+            </div>
+
+            <!-- Resolution -->
+            <div>
+              <label for="motion-res-select" class="block text-[11px] font-semibold text-slate-300 mb-1">
+                Native Resolution (No Upscale)
+              </label>
+              <select id="motion-res-select" onchange="updateExportSpecs()"
+                class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-indigo-500 text-xs text-white p-2.5 outline-none">
+                <option value="1080p">Full HD (1920×1080)</option>
+                <option value="4k">4K UHD (3840×2160)</option>
+              </select>
+            </div>
+
+            <!-- Duration -->
+            <div>
+              <label for="motion-duration-select" class="block text-[11px] font-semibold text-slate-300 mb-1">
+                Duration (Adobe Limit)
+              </label>
+              <select id="motion-duration-select" onchange="updateExportSpecs()"
+                class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-indigo-500 text-xs text-white p-2.5 outline-none">
+                <option value="5">5 seconds</option>
+                <option value="10" selected>10 seconds</option>
+                <option value="15">15 seconds</option>
+                <option value="30">30 seconds</option>
+              </select>
+            </div>
+
+            <!-- Frame Rate -->
+            <div>
+              <label for="motion-fps-select" class="block text-[11px] font-semibold text-slate-300 mb-1">
+                Frame Rate
+              </label>
+              <select id="motion-fps-select" onchange="updateExportSpecs()"
+                class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-indigo-500 text-xs text-white p-2.5 outline-none">
+                <option value="24">24 fps (Cinema)</option>
+                <option value="30" selected>30 fps (Broadcast)</option>
+                <option value="60">60 fps (Ultra Smooth)</option>
+              </select>
+            </div>
+
+            <!-- Audio Track -->
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">
+                Audio Track Policy
+              </label>
+              <div class="w-full rounded-xl bg-studio-input/90 border border-emerald-500/30 text-xs text-emerald-300 px-3 py-2.5 flex items-center justify-between">
+                <span class="font-medium">No Audio (Adobe Safe)</span>
+                <span class="text-[10px] font-mono text-emerald-400/80">Silent</span>
+              </div>
+            </div>
+
+            <!-- Video Encoder Codec (Crash-Safe) -->
+            <div>
+              <label for="motion-codec-select" class="block text-[11px] font-semibold text-slate-300 mb-1">
+                Video Container & Codec
+              </label>
+              <select id="motion-codec-select" onchange="updateExportSpecs()"
+                class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-indigo-500 text-xs text-white p-2.5 outline-none">
+                <option value="mp4" selected>MP4 H.264 (Adobe Stock Standard • 20 Mbps)</option>
+                <option value="vp9">WebM VP9 (Safe 4K • 20 Mbps)</option>
+                <option value="vp8">WebM VP8 (Ultra Compatible)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ========== VECTOR (.SVG) EXPORT PARAMETERS ========== -->
+          <div id="export-params-vector" class="hidden space-y-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label for="vector-size-select" class="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Artboard Size
+                </label>
+                <select id="vector-size-select" onchange="handleVectorSizeChange()"
+                  class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-purple-500 text-xs text-white p-2.5 outline-none">
+                  <option value="4096x4096" selected>4096×4096 px (Standar Microstock)</option>
+                  <option value="1920x1080">1920×1080 px (HD Widescreen)</option>
+                  <option value="custom">Custom Artboard...</option>
+                </select>
+              </div>
+
+              <div id="vector-custom-dims" class="hidden sm:col-span-2 grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Width (px)</label>
+                  <input type="number" id="vector-custom-w" value="4096" min="512" max="8192" oninput="updateExportSpecs()"
+                    class="w-full rounded-xl bg-studio-input border border-studio-border text-xs font-mono text-white p-2.5 outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Height (px)</label>
+                  <input type="number" id="vector-custom-h" value="4096" min="512" max="8192" oninput="updateExportSpecs()"
+                    class="w-full rounded-xl bg-studio-input border border-studio-border text-xs font-mono text-white p-2.5 outline-none" />
+                </div>
+              </div>
+
+              <div id="vector-compliance-flags" class="sm:col-span-2 flex flex-wrap items-center gap-2 pt-1 sm:pt-5">
+                <span class="px-2.5 py-1.5 rounded-lg bg-studio-input border border-studio-border text-[11px] font-mono text-cyan-300">
+                  ✓ RGB Mode
+                </span>
+                <span class="px-2.5 py-1.5 rounded-lg bg-studio-input border border-studio-border text-[11px] font-mono text-emerald-300">
+                  ✓ Clean Closed Paths
+                </span>
+                <label class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-studio-input border border-studio-border text-[11px] text-slate-200 cursor-pointer select-none">
+                  <input type="checkbox" id="vector-transparent-toggle" checked onchange="applyVectorTransparentToggle()"
+                    class="rounded border-slate-600 text-purple-500 focus:ring-purple-500 bg-slate-900" />
+                  <span>Transparent Background</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========== ADOBE STOCK READY-TO-COPY CONTENT TITLE & KEYWORDS (VIDEO & VECTOR) ========== -->
+          <div id="adobe-stock-metadata-box" class="rounded-xl bg-studio-input/95 border border-indigo-500/35 p-3.5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-indigo-300">Adobe Stock Upload Metadata</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  Ready to Copy
+                </span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="generateAdobeStockMetadata()"
+                  class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold transition-colors">
+                  ↻ Auto-Generate
+                </button>
+                <button type="button" onclick="downloadMetadataCSV()"
+                  class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-cyan-300 text-[11px] font-semibold transition-colors">
+                  ⬇ Export .CSV
+                </button>
+              </div>
+            </div>
+
+            <!-- Content Title Field + Copy Button -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <label for="seo-title-input" class="text-[11px] font-semibold text-slate-300">
+                  Content title
+                </label>
+                <span id="title-char-pill" class="text-[10px] font-mono text-slate-400">0 / 70 chars</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="text" id="seo-title-input" oninput="updateMetadataCounters()"
+                  value="Futuristic Circular Radar HUD Telemetry Motion Graphics Loop"
+                  class="flex-1 min-w-0 rounded-lg bg-[#0B0D17] border border-studio-border focus:border-indigo-500 text-xs text-white px-2.5 py-2 outline-none"
+                  placeholder="Adobe Stock English Content Title (Max 70 chars recommended)" />
+                <button type="button" onclick="copyMetadataField('seo-title-input', this)"
+                  class="shrink-0 px-3 py-2 rounded-lg bg-slate-800 hover:bg-indigo-600 border border-slate-600 hover:border-indigo-500 text-slate-200 hover:text-white text-[11px] font-semibold transition-colors flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  <span>Copy Title</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Keywords Field + Copy Button -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <label for="seo-keywords-textarea" class="text-[11px] font-semibold text-slate-300">
+                  Keywords
+                </label>
+                <span id="keyword-count-pill" class="text-[10px] font-mono text-indigo-300">30 keywords</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <textarea id="seo-keywords-textarea" rows="2" oninput="updateMetadataCounters()"
+                  class="flex-1 min-w-0 rounded-lg bg-[#0B0D17] border border-studio-border focus:border-indigo-500 text-[11px] font-mono text-slate-300 px-2.5 py-2 outline-none leading-relaxed"
+                  placeholder="30 comma-separated English keywords ordered by relevance..."></textarea>
+                <button type="button" onclick="copyMetadataField('seo-keywords-textarea', this)"
+                  class="shrink-0 px-3 py-2 rounded-lg bg-slate-800 hover:bg-indigo-600 border border-slate-600 hover:border-indigo-500 text-slate-200 hover:text-white text-[11px] font-semibold transition-colors flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  <span>Copy Keywords</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- KOTAK INFORMASI KEPATUHAN ("✓ ADOBE STOCK EXPORT PRESET") -->
+          <div class="rounded-xl bg-emerald-950/35 border border-emerald-500/40 p-3.5 flex items-start gap-3">
+            <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+              ✓
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[11px] font-extrabold tracking-wider uppercase text-emerald-400">
+                ✓ ADOBE STOCK EXPORT PRESET
+              </div>
+              <p id="adobe-compliance-summary" class="text-xs font-mono text-emerald-100/95 mt-1 leading-relaxed">
+                High-Bitrate 20.00 Mbps target • Native 1920x1080 • 30 fps • 10 s • No audio track • Adobe-listed frame size • No upscaling
+              </p>
+            </div>
+          </div>
+
+          <!-- REAL-TIME RENDER PROGRESS BAR (Visible during recording) -->
+          <div id="render-progress-wrapper" class="hidden rounded-xl bg-studio-input border border-indigo-500/40 p-3.5 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span id="render-progress-label" class="font-semibold text-indigo-300 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                <span>Recording Native Canvas Stream (20 Mbps)...</span>
+              </span>
+              <span id="render-progress-percent" class="font-mono font-bold text-white">0%</span>
+            </div>
+            <div class="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
+              <div id="render-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400 transition-all duration-150" style="width: 0%"></div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <span id="render-frame-telemetry">Frame 0 / 300 • Native Buffer</span>
+              <button type="button" onclick="cancelActiveRender()" class="text-rose-400 hover:text-rose-300 underline">
+                Cancel Render
+              </button>
+            </div>
+          </div>
+
+          <!-- TOMBOL UTAMA "+ RENDER & DOWNLOAD" -->
+          <button type="button" id="btn-render-download" onclick="startRenderAndDownload()"
+            class="w-full py-3.5 px-5 rounded-xl btn-render-glow text-white font-bold text-sm tracking-wide flex items-center justify-center gap-2.5 cursor-pointer">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+            </svg>
+            <span id="btn-render-label">+ Render & Download Video Motion (20 Mbps)</span>
+          </button>
+
+          <!-- KONSOL LOG PREFLIGHT & STATUS -->
+          <div class="rounded-xl bg-[#070910] border border-studio-border p-3 font-mono text-[11px]">
+            <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-800/80 text-[10px] text-slate-500">
+              <span>PREFLIGHT & RENDER TELEMETRY CONSOLE</span>
+              <button type="button" onclick="clearPreflightConsole()" class="hover:text-slate-300">Clear Log</button>
+            </div>
+            <div id="preflight-console-log" class="space-y-1 max-h-28 overflow-y-auto text-slate-300 leading-relaxed">
+              <div class="text-slate-400">Preflight: waiting for render.</div>
+              <div class="text-emerald-400">&gt; Siap: Chroma_HUD_Radar_60fps</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ==================== WORKSPACE TAB 2: PRESETS GALLERY ==================== -->
+  <main id="workspace-presets" class="hidden flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6">
+    <div class="bg-studio-panel rounded-2xl border border-studio-border p-6 space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-studio-border pb-4">
+        <div>
+          <h2 class="text-lg font-bold text-white">Adobe Stock Curated Starter Presets</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Template Motion 60fps & Vector 4096×4096px siap uji coba dan modifikasi</p>
+        </div>
+        <button type="button" onclick="switchWorkspaceTab('create')"
+          class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+          ← Kembali ke Studio Editor
+        </button>
+      </div>
+      <div id="presets-gallery-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== WORKSPACE TAB 3: EXPORT QUEUE HISTORY ==================== -->
+  <main id="workspace-queue" class="hidden flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6">
+    <div class="bg-studio-panel rounded-2xl border border-studio-border p-6 space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-studio-border pb-4">
+        <div>
+          <h2 class="text-lg font-bold text-white">Export Queue & Rendered Deliverables</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Riwayat file Video Motion (.webm/.mp4) dan Vector (.svg) yang berhasil dirender pada sesi ini</p>
+        </div>
+        <button type="button" onclick="switchWorkspaceTab('create')"
+          class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+          ← Kembali ke Studio Editor
+        </button>
+      </div>
+      <!-- Inline Video Verification Player -->
+      <div id="queue-video-player-box" class="hidden rounded-xl bg-[#080A12] border border-indigo-500/40 p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span id="queue-player-title" class="text-xs font-mono font-semibold text-cyan-300">Preview Render</span>
+          <button type="button" onclick="closeQueueVideoPlayer()" class="text-xs text-slate-400 hover:text-white">✕ Tutup Player</button>
+        </div>
+        <video id="queue-video-element" controls loop playsinline class="w-full max-h-[360px] rounded-lg bg-black mx-auto"></video>
+      </div>
+      <div id="export-queue-list" class="space-y-3">
+        <div class="text-center py-12 text-slate-500 text-xs">
+          Belum ada file yang dirender. Klik <strong class="text-emerald-400">+ Render & Download</strong> di tab Create untuk mulai mengekspor aset Adobe Stock.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== MODAL: GEMINI API KEY SETTINGS ==================== -->
+  <div id="api-key-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-studio-panel border border-studio-border rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-studio-border pb-3">
+        <h3 class="text-sm font-bold text-white">Pengaturan Gemini API Key (Opsional)</h3>
+        <button type="button" onclick="closeApiKeyModal()" class="text-slate-400 hover:text-white text-lg leading-none">&times;</button>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Masukkan API Key Google Gemini (<code class="text-cyan-300">gemini-3-flash-preview</code>) untuk mengaktifkan generasi kode animasi & SVG berbasis LLM secara langsung. Jika dikosongkan, aplikasi tetap berjalan penuh menggunakan lingkungan runtime bawaan dan mesin sintetis prosedural.
+      </p>
+      <div>
+        <label for="gemini-api-key-input" class="block text-[11px] font-semibold text-slate-400 mb-1">Gemini API Key</label>
+        <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..."
+          class="w-full rounded-xl bg-studio-input border border-studio-border focus:border-indigo-500 text-xs font-mono text-white px-3 py-2.5 outline-none" />
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" onclick="clearCustomApiKey()"
+          class="px-3 py-2 rounded-xl text-xs text-rose-400 hover:bg-rose-500/10">
+          Reset Default
+        </button>
+        <button type="button" onclick="saveCustomApiKey()"
+          class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+          Simpan Konfigurasi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== APPLICATION LOGIC & RENDER ENGINE ==================== -->
+  <script>
+    /* ============================================================================
+       1. BUILT-IN ADOBE STOCK CURATED PRESETS (2 MOTION 60FPS + 2 VECTOR 4096PX)
+       ============================================================================ */
+    const BUILTIN_PRESETS = [
+      {
+        id: 'preset-motion-hud',
+        name: 'Chroma_HUD_Radar_60fps',
+        type: 'motion',
+        tag: '60 FPS • Chroma Key #00FF00',
+        description: 'Futuristic circular telemetry HUD & orbital scanner rings on pure Chroma Key Green Screen (#00FF00) at smooth 60fps.',
+        defaultBg: '#00FF00',
+        code: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+    canvas { display: block; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <canvas id="studioCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById('studioCanvas');
+    const ctx = canvas.getContext('2d');
+    let startTime = performance.now();
+
+    function resize() {
+      canvas.width = window.innerWidth || 1920;
+      canvas.height = window.innerHeight || 1080;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'RESTART_ANIMATION') {
+        startTime = performance.now();
+      }
+    });
+
+    function drawFrame(now) {
+      if (window.__STUDIO_PAUSED__) {
+        requestAnimationFrame(drawFrame);
+        return;
+      }
+      const w = canvas.width;
+      const h = canvas.height;
+      const t = (now - startTime) * 0.001;
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const baseR = Math.min(w, h) * 0.34;
+
+      ctx.clearRect(0, 0, w, h);
+      const bg = window.__STUDIO_BG__;
+      if (bg && bg !== 'transparent') {
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // Subtle Radar Sweep Sector
+      const sweepAngle = t * 1.6;
+      const grad = ctx.createRadialGradient(0, 0, baseR * 0.05, 0, 0, baseR);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+      grad.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, baseR, sweepAngle - 0.65, sweepAngle);
+      ctx.closePath();
+      ctx.fill();
+
+      // Outer Segmented HUD Ring
+      ctx.save();
+      ctx.rotate(t * 0.35);
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = Math.max(2, baseR * 0.012);
+      ctx.setLineDash([baseR * 0.18, baseR * 0.06, baseR * 0.04, baseR * 0.06]);
+      ctx.beginPath();
+      ctx.arc(0, 0, baseR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Counter-rotating Cyan Telemetry Ring
+      ctx.save();
+      ctx.rotate(-t * 0.55);
+      ctx.strokeStyle = '#0F172A';
+      ctx.lineWidth = Math.max(3, baseR * 0.018);
+      ctx.setLineDash([baseR * 0.28, baseR * 0.14]);
+      ctx.beginPath();
+      ctx.arc(0, 0, baseR * 0.82, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Precision Tick Marks Ring
+      const ticks = 48;
+      for (let i = 0; i < ticks; i++) {
+        const a = (i / ticks) * Math.PI * 2 + t * 0.15;
+        const isMajor = i % 4 === 0;
+        const r1 = baseR * 0.66;
+        const r2 = baseR * (isMajor ? 0.73 : 0.69);
+        ctx.strokeStyle = isMajor ? '#FFFFFF' : 'rgba(15, 23, 42, 0.85)';
+        ctx.lineWidth = isMajor ? Math.max(2, baseR * 0.008) : Math.max(1.2, baseR * 0.004);
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
+        ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
+        ctx.stroke();
+      }
+
+      // Pulsing Core Rings
+      const pulse = 1 + Math.sin(t * 4) * 0.06;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = Math.max(2.5, baseR * 0.012);
+      ctx.beginPath();
+      ctx.arc(0, 0, baseR * 0.36 * pulse, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Orbital Tracking Nodes
+      for (let k = 0; k < 3; k++) {
+        const orbitA = t * (1.1 + k * 0.3) + k * 2.1;
+        const orbitR = baseR * (0.48 + k * 0.17);
+        const nx = Math.cos(orbitA) * orbitR;
+        const ny = Math.sin(orbitA) * orbitR;
+
+        ctx.fillStyle = '#0F172A';
+        ctx.beginPath();
+        ctx.arc(nx, ny, baseR * 0.026, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = Math.max(1.8, baseR * 0.007);
+        ctx.beginPath();
+        ctx.arc(nx, ny, baseR * 0.045, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Center Crosshair
+      const ch = baseR * 0.09;
+      ctx.strokeStyle = '#0F172A';
+      ctx.lineWidth = Math.max(2, baseR * 0.009);
+      ctx.beginPath();
+      ctx.moveTo(-ch, 0); ctx.lineTo(ch, 0);
+      ctx.moveTo(0, -ch); ctx.lineTo(0, ch);
+      ctx.stroke();
+
+      ctx.restore();
+      requestAnimationFrame(drawFrame);
+    }
+    requestAnimationFrame(drawFrame);
+  <\/script>
+</body>
+</html>`
+      },
+      {
+        id: 'preset-motion-gold',
+        name: 'Luxury_Gold_Bokeh_Flow_60fps',
+        type: 'motion',
+        tag: '60 FPS • Seamless Particle Loop',
+        description: 'Luminous 24K golden bokeh spheres and harmonic silk waves drifting smoothly at 60fps for luxury backgrounds.',
+        defaultBg: '#0B0D17',
+        code: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+    canvas { display: block; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <canvas id="studioCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById('studioCanvas');
+    const ctx = canvas.getContext('2d');
+    let startTime = performance.now();
+
+    function resize() {
+      canvas.width = window.innerWidth || 1920;
+      canvas.height = window.innerHeight || 1080;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'RESTART_ANIMATION') {
+        startTime = performance.now();
+      }
+    });
+
+    // Deterministic Particle Seeds for Seamless Loop
+    const particles = Array.from({ length: 65 }, (_, i) => ({
+      rx: ((i * 73) % 100) / 100,
+      ry: ((i * 41) % 100) / 100,
+      size: 0.004 + (i % 7) * 0.0032,
+      speed: 0.4 + (i % 5) * 0.18,
+      phase: i * 0.85,
+      alpha: 0.25 + (i % 6) * 0.11
+    }));
+
+    function drawFrame(now) {
+      if (window.__STUDIO_PAUSED__) {
+        requestAnimationFrame(drawFrame);
+        return;
+      }
+      const w = canvas.width;
+      const h = canvas.height;
+      const t = (now - startTime) * 0.001;
+      const minDim = Math.min(w, h);
+
+      ctx.clearRect(0, 0, w, h);
+      const bg = window.__STUDIO_BG__;
+      if (bg && bg !== 'transparent') {
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // Harmonic Golden Silk Ribbons
+      for (let ribbon = 0; ribbon < 3; ribbon++) {
+        ctx.beginPath();
+        const amp = h * (0.08 + ribbon * 0.03);
+        const yBase = h * (0.38 + ribbon * 0.12);
+        for (let x = 0; x <= w; x += Math.max(12, w / 80)) {
+          const normX = x / w;
+          const y = yBase
+            + Math.sin(normX * Math.PI * 2 + t * (0.9 + ribbon * 0.25) + ribbon) * amp
+            + Math.cos(normX * Math.PI * 3 - t * 0.6) * (amp * 0.4);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = ribbon === 1 ? 'rgba(251, 191, 36, 0.35)' : 'rgba(245, 158, 11, 0.18)';
+        ctx.lineWidth = Math.max(2, minDim * (0.004 - ribbon * 0.0008));
+        ctx.stroke();
+      }
+
+      // Floating Golden Bokeh Orbs
+      for (const p of particles) {
+        const px = ((p.rx + Math.sin(t * 0.35 + p.phase) * 0.06 + t * 0.02 * p.speed) % 1) * w;
+        const py = ((1 + p.ry - (t * 0.045 * p.speed) % 1) % 1) * h;
+        const r = minDim * p.size * (1 + Math.sin(t * 2.2 + p.phase) * 0.18);
+
+        const g = ctx.createRadialGradient(px, py, 0, px, py, r * 2.4);
+        g.addColorStop(0, 'rgba(254, 243, 199, ' + p.alpha + ')');
+        g.addColorStop(0.45, 'rgba(245, 158, 11, ' + (p.alpha * 0.65) + ')');
+        g.addColorStop(1, 'rgba(217, 119, 6, 0)');
+
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(px, py, r * 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(drawFrame);
+    }
+    requestAnimationFrame(drawFrame);
+  <\/script>
+</body>
+</html>`
+      },
+      {
+        id: 'preset-vector-cloud',
+        name: 'Isometric_Cloud_Node_4K',
+        type: 'vector',
+        tag: '4096×4096 • Clean Closed Paths',
+        description: 'Pure 4096×4096px SVG isometric cloud server cluster and geometric data nodes with zero raster bitmap elements.',
+        defaultBg: 'transparent',
+        code: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4096 4096" width="4096" height="4096">
+  <defs>
+    <linearGradient id="isoTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+    <linearGradient id="isoLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#312E81" />
+    </linearGradient>
+    <linearGradient id="isoRight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+    <linearGradient id="accentGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE" />
+      <stop offset="100%" stop-color="#A855F7" />
+    </linearGradient>
+  </defs>
+  <g id="VectorArtworkLayer">
+    <!-- Base Isometric Platform -->
+    <polygon points="2048,2650 3260,1950 2048,1250 836,1950" fill="#1E293B" stroke="#38BDF8" stroke-width="18" />
+    <polygon points="836,1950 2048,2650 2048,2830 836,2130" fill="#0F172A" />
+    <polygon points="3260,1950 2048,2650 2048,2830 3260,2130" fill="#172554" />
+
+    <!-- Central Isometric Core Monolith -->
+    <polygon points="2048,920 2680,1285 2048,1650 1416,1285" fill="url(#isoTop)" />
+    <polygon points="1416,1285 2048,1650 2048,2360 1416,1995" fill="url(#isoLeft)" />
+    <polygon points="2680,1285 2048,1650 2048,2360 2680,1995" fill="url(#isoRight)" />
+
+    <!-- Server Rack Data Bars (Left Face) -->
+    <polygon points="1530,1520 1930,1750 1930,1820 1530,1590" fill="#38BDF8" />
+    <polygon points="1530,1680 1930,1910 1930,1980 1530,1750" fill="#22D3EE" />
+    <polygon points="1530,1840 1930,2070 1930,2140 1530,1910" fill="#818CF8" />
+
+    <!-- Server Rack Indicators (Right Face) -->
+    <polygon points="2166,1750 2566,1520 2566,1590 2166,1820" fill="#A855F7" />
+    <polygon points="2166,1910 2566,1680 2566,1750 2166,1980" fill="#38BDF8" />
+    <polygon points="2166,2070 2566,1840 2566,1910 2166,2140" fill="#22D3EE" />
+
+    <!-- Floating Top Isometric Data Cube -->
+    <polygon points="2048,460 2360,640 2048,820 1736,640" fill="url(#accentGlow)" />
+    <polygon points="1736,640 2048,820 2048,1140 1736,960" fill="#4338CA" />
+    <polygon points="2360,640 2048,820 2048,1140 2360,960" fill="#0369A1" />
+
+    <!-- Satellite Isometric Nodes -->
+    <polygon points="1040,1560 1260,1687 1040,1814 820,1687" fill="#22D3EE" />
+    <polygon points="820,1687 1040,1814 1040,2050 820,1923" fill="#3730A3" />
+    <polygon points="1260,1687 1040,1814 1040,2050 1260,1923" fill="#075985" />
+
+    <polygon points="3056,1560 3276,1687 3056,1814 2836,1687" fill="#A855F7" />
+    <polygon points="2836,1687 3056,1814 3056,2050 2836,1923" fill="#4C1D95" />
+    <polygon points="3276,1687 3056,1814 3056,2050 3276,1923" fill="#1E40AF" />
+
+    <!-- Vector Circuit Pathways -->
+    <path d="M 1040,2050 L 1040,2420 L 1780,2850" fill="none" stroke="#22D3EE" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 3056,2050 L 3056,2420 L 2316,2850" fill="none" stroke="#A855F7" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="1780" cy="2850" r="42" fill="#22D3EE" />
+    <circle cx="2316" cy="2850" r="42" fill="#A855F7" />
+  </g>
+</svg>`
+      },
+      {
+        id: 'preset-vector-mandala',
+        name: 'Geometric_Sacred_Mandala_4K',
+        type: 'vector',
+        tag: '4096×4096 • Precision Symmetry',
+        description: 'Symmetrical golden-ratio geometric lotus mandala constructed from clean closed vector paths and radial circles.',
+        defaultBg: 'transparent',
+        code: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4096 4096" width="4096" height="4096">
+  <defs>
+    <linearGradient id="goldPetal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="50%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#B45309" />
+    </linearGradient>
+    <linearGradient id="tealRing" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+  </defs>
+  <g id="SacredGeometryLayer" transform="translate(2048,2048)">
+    <!-- Outer Sacred Circles -->
+    <circle cx="0" cy="0" r="1760" fill="none" stroke="url(#goldPetal)" stroke-width="26" />
+    <circle cx="0" cy="0" r="1640" fill="none" stroke="url(#tealRing)" stroke-width="14" />
+    <circle cx="0" cy="0" r="1260" fill="none" stroke="url(#goldPetal)" stroke-width="20" />
+
+    <!-- 12 Outer Lotus Petals -->
+    <g fill="url(#goldPetal)" fill-opacity="0.88" stroke="#78350F" stroke-width="10">
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(0)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(30)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(60)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(90)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(120)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(150)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(180)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(210)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(240)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(270)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(300)" />
+      <path d="M 0,-1620 C 260,-1240 260,-840 0,-560 C -260,-840 -260,-1240 0,-1620 Z" transform="rotate(330)" />
+    </g>
+
+    <!-- 12 Inner Cyan Geometric Diamonds -->
+    <g fill="url(#tealRing)" fill-opacity="0.9" stroke="#0F172A" stroke-width="10">
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(15)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(45)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(75)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(105)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(135)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(165)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(195)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(225)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(255)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(285)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(315)" />
+      <polygon points="0,-1120 180,-680 0,-320 -180,-680" transform="rotate(345)" />
+    </g>
+
+    <!-- Center Core Star & Rosette -->
+    <circle cx="0" cy="0" r="360" fill="#0F172A" stroke="url(#goldPetal)" stroke-width="22" />
+    <circle cx="0" cy="0" r="180" fill="url(#goldPetal)" />
+    <circle cx="0" cy="0" r="72" fill="#0F172A" />
+  </g>
+</svg>`
+      }
+    ];
+
+    /* ============================================================================
+       2. GLOBAL APPLICATION STATE
+       ============================================================================ */
+    const state = {
+      outputMode: 'motion', // 'motion' | 'vector'
+      assets: [...BUILTIN_PRESETS],
+      selectedAssetId: 'preset-motion-hud',
+      viewportBg: '#00FF00',
+      isPaused: false,
+      currentFps: 60.0,
+      geminiApiKey: '',
+      exportHistory: [],
+      isRendering: false,
+      activeRenderAbort: null,
+      clearConfirmPending: false
+    };
+
+    /* ============================================================================
+       3. INITIALIZATION & UI HELPERS
+       ============================================================================ */
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAssetLibrary();
+      renderPresetsGallery();
+      selectAsset(state.selectedAssetId, true);
+      updateExportSpecs();
+      generateAdobeStockMetadata(true);
+      logPreflight('Preflight: waiting for render.', 'muted');
+      logPreflight(`> Siap: ${getSelectedAsset().name}`, 'success');
+    });
+
+    // Listen to telemetry messages from Live Preview iframe
+    window.addEventListener('message', (event) => {
+      if (!event.data || typeof event.data !== 'object') return;
+      if (event.data.type === 'STUDIO_FPS_UPDATE') {
+        state.currentFps = event.data.fps;
+        const fpsEl = document.getElementById('live-fps-counter');
+        if (fpsEl) {
+          fpsEl.textContent = state.isPaused ? '0.0 FPS (PAUSED)' : `${Number(event.data.fps).toFixed(1)} FPS`;
+        }
+      }
+    });
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = {
+        info: 'bg-[#181D30] border-indigo-500/50 text-indigo-100',
+        success: 'bg-[#0E241E] border-emerald-500/50 text-emerald-100',
+        warning: 'bg-[#261E10] border-amber-500/50 text-amber-100',
+        error: 'bg-[#281218] border-rose-500/50 text-rose-100'
+      };
+      toast.className = `pointer-events-auto rounded-xl border px-3.5 py-2.5 text-xs font-medium shadow-xl backdrop-blur-md transition-all duration-200 ${colors[type] || colors.info}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(6px)';
+        setTimeout(() => toast.remove(), 220);
+      }, 3200);
+    }
+
+    function logPreflight(text, level = 'info') {
+      const consoleEl = document.getElementById('preflight-console-log');
+      if (!consoleEl) return;
+      const line = document.createElement('div');
+      const colorMap = {
+        muted: 'text-slate-400',
+        info: 'text-cyan-300',
+        success: 'text-emerald-400',
+        warn: 'text-amber-300',
+        error: 'text-rose-400'
+      };
+      line.className = colorMap[level] || 'text-slate-300';
+      line.textContent = text;
+      consoleEl.appendChild(line);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function clearPreflightConsole() {
+      const consoleEl = document.getElementById('preflight-console-log');
+      const asset = getSelectedAsset();
+      consoleEl.innerHTML = '';
+      logPreflight('Preflight: waiting for render.', 'muted');
+      if (asset) logPreflight(`> Siap: ${asset.name}`, 'success');
+    }
+
+    /* ============================================================================
+       4. WORKSPACE TABS & API KEY MODAL
+       ============================================================================ */
+    function switchWorkspaceTab(tab) {
+      ['create', 'presets', 'queue'].forEach((t) => {
+        document.getElementById(`workspace-${t}`).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tab) {
+          btn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+          btn.classList.remove('text-slate-400');
+        } else {
+          btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+          btn.classList.add('text-slate-400');
+        }
+      });
+      if (tab === 'presets') renderPresetsGallery();
+      if (tab === 'queue') renderExportQueueTab();
+    }
+
+    function openApiKeyModal() {
+      document.getElementById('gemini-api-key-input').value = state.geminiApiKey;
+      document.getElementById('api-key-modal').classList.remove('hidden');
+    }
+
+    function closeApiKeyModal() {
+      document.getElementById('api-key-modal').classList.add('hidden');
+    }
+
+    function saveCustomApiKey() {
+      state.geminiApiKey = document.getElementById('gemini-api-key-input').value.trim();
+      closeApiKeyModal();
+      const dot = document.getElementById('api-status-dot');
+      if (state.geminiApiKey) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        showToast('Custom Gemini API Key aktif untuk sesi ini.', 'success');
+        logPreflight('> Gemini API Key kustom terpasang (gemini-3-flash-preview).', 'info');
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-cyan-400 animate-pulse';
+        showToast('Menggunakan kunci runtime bawaan.', 'info');
+      }
+    }
+
+    function clearCustomApiKey() {
+      state.geminiApiKey = '';
+      document.getElementById('gemini-api-key-input').value = '';
+      closeApiKeyModal();
+      document.getElementById('api-status-dot').className = 'w-2 h-2 rounded-full bg-cyan-400 animate-pulse';
+      showToast('API Key direset ke default.', 'info');
+    }
+
+    /* ============================================================================
+       5. OUTPUT MODE & DRAWERS
+       ============================================================================ */
+    function setOutputMode(mode) {
+      state.outputMode = mode;
+
+      const btnMotion = document.getElementById('mode-btn-motion');
+      const btnVector = document.getElementById('mode-btn-vector');
+      const modePill = document.getElementById('panel1-mode-pill');
+
+      if (mode === 'motion') {
+        btnMotion.className = 'p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 bg-indigo-600/15 border-indigo-500 text-white shadow-sm';
+        btnVector.className = 'p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 bg-studio-card/70 border-studio-border text-slate-300 hover:border-slate-600';
+        modePill.textContent = 'MOTION MODE';
+        modePill.className = 'px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30';
+
+        document.getElementById('export-params-motion').classList.remove('hidden');
+        document.getElementById('export-params-vector').classList.add('hidden');
+        document.getElementById('btn-render-label').textContent = '+ Render & Download Video Motion (20 Mbps)';
+      } else {
+        btnVector.className = 'p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 bg-purple-600/15 border-purple-500 text-white shadow-sm';
+        btnMotion.className = 'p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 bg-studio-card/70 border-studio-border text-slate-300 hover:border-slate-600';
+        modePill.textContent = 'VECTOR .SVG MODE';
+        modePill.className = 'px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30';
+
+        document.getElementById('export-params-motion').classList.add('hidden');
+        document.getElementById('export-params-vector').classList.remove('hidden');
+        document.getElementById('btn-render-label').textContent = '+ Render & Download Pure Vector (.SVG)';
+      }
+
+      // Automatically select first matching asset if current asset is of opposite type
+      const current = getSelectedAsset();
+      if (!current || current.type !== mode) {
+        const match = state.assets.find((a) => a.type === mode);
+        if (match) {
+          selectAsset(match.id, true);
+        }
+      }
+
+      renderAssetLibrary();
+      updateExportSpecs();
+      generateAdobeStockMetadata(true);
+    }
+
+    function toggleDrawer(which) {
+      const promptDrawer = document.getElementById('drawer-prompt');
+      const codeDrawer = document.getElementById('drawer-code');
+      if (which === 'prompt') {
+        const isHidden = promptDrawer.classList.contains('hidden');
+        promptDrawer.classList.toggle('hidden', !isHidden);
+        if (isHidden) codeDrawer.classList.add('hidden');
+      } else {
+        const isHidden = codeDrawer.classList.contains('hidden');
+        codeDrawer.classList.toggle('hidden', !isHidden);
+        if (isHidden) promptDrawer.classList.add('hidden');
+      }
+    }
+
+    function updateCodeCharCount() {
+      const val = document.getElementById('manual-code-textarea').value;
+      document.getElementById('code-char-counter').textContent = `${val.length.toLocaleString()} chars`;
+    }
+
+    /* ============================================================================
+       6. KOLOM 1: AI + PROCEDURAL PROMPT GENERATOR
+       ============================================================================ */
+    async function handleCreateFromPrompt() {
+      const promptText = document.getElementById('prompt-text-input').value.trim();
+      const style = document.getElementById('prompt-style-select').value;
+      const palette = document.getElementById('prompt-palette-select').value;
+
+      if (!promptText) {
+        showToast('Silakan masukkan deskripsi prompt terlebih dahulu.', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-prompt');
+      const spinner = document.getElementById('prompt-spinner');
+      btn.disabled = true;
+      spinner.classList.remove('hidden');
+
+      const isMotion = state.outputMode === 'motion';
+      const cleanSlug = promptText
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .trim()
+        .split(/\s+/)
+        .slice(0, 4)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join('_') || (isMotion ? 'Custom_Motion_Loop' : 'Custom_Vector_Art');
+
+      const assetName = `${cleanSlug}_${isMotion ? '60fps' : '4K'}`;
+      let generatedCode = '';
+      let sourceLabel = 'Procedural Synthesizer';
+
+      try {
+        generatedCode = await generateWithGeminiAPI(promptText, style, palette, isMotion);
+        if (generatedCode && generatedCode.length > 80) {
+          sourceLabel = 'Gemini AI + Adobe QC';
+        } else {
+          generatedCode = buildProceduralAsset(promptText, style, palette, isMotion);
+        }
+      } catch (_) {
+        generatedCode = buildProceduralAsset(promptText, style, palette, isMotion);
+      }
+
+      const defaultBg = style === 'chroma_green' ? '#00FF00' : (isMotion ? '#0B0D17' : 'transparent');
+
+      const newAsset = {
+        id: 'asset-' + Date.now(),
+        name: assetName,
+        type: isMotion ? 'motion' : 'vector',
+        tag: isMotion ? `60 FPS • ${sourceLabel}` : `4096×4096 • ${sourceLabel}`,
+        description: promptText,
+        defaultBg,
+        code: generatedCode
+      };
+
+      state.assets.unshift(newAsset);
+      btn.disabled = false;
+      spinner.classList.add('hidden');
+      toggleDrawer('prompt');
+      document.getElementById('prompt-text-input').value = '';
+
+      selectAsset(newAsset.id, true);
+      renderAssetLibrary();
+      generateAdobeStockMetadata(true);
+      showToast(`Aset "${assetName}" berhasil dibuat & dimuat!`, 'success');
+      logPreflight(`> Generated [${newAsset.type.toUpperCase()}]: ${assetName} (${sourceLabel})`, 'info');
+    }
+
+    async function generateWithGeminiAPI(promptText, style, palette, isMotion) {
+      const apiKey = state.geminiApiKey || '';
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const systemPrompt = isMotion
+        ? `You are an expert HTML5 Canvas 2D creative coder for Adobe Stock Motion Graphics. Return ONLY raw, self-contained HTML5 code starting with <!DOCTYPE html> and ending with </html>. Do NOT wrap in markdown code fences. Rules: 1) Include <canvas id="studioCanvas"></canvas> sized to window.innerWidth x window.innerHeight. 2) Use smooth 60fps requestAnimationFrame math. 3) Before drawing, clear canvas and if (window.__STUDIO_BG__ && window.__STUDIO_BG__ !== 'transparent') fill background with window.__STUDIO_BG__. 4) Listen to window message 'RESTART_ANIMATION' to reset startTime. 5) Never render text, watermarks, or external image URLs.`
+        : `You are an expert vector illustrator for Adobe Stock. Return ONLY raw, valid XML SVG code starting with <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4096 4096" width="4096" height="4096"> and ending with </svg>. Do NOT wrap in markdown fences. Rules: 1) Use strictly clean closed <path>, <polygon>, <circle>, <rect> geometry. 2) NEVER use <image>, <text>, or external links. 3) Center rich artwork inside the 4096x4096 artboard.`;
+
+      const userQuery = `Create a commercial Adobe Stock asset. Concept: "${promptText}". Visual style: ${style}. Color palette: ${palette}.`;
+
+      const payload = {
+        contents: [{ parts: [{ text: userQuery }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] }
+      };
+
+      let delay = 1000;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 9000);
+          const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+          clearTimeout(timer);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          raw = raw.replace(/^```[a-zA-Z]*\n?/gm, '').replace(/```$/gm, '').trim();
+          if (isMotion && raw.includes('<canvas')) return raw;
+          if (!isMotion && raw.includes('<svg') && raw.includes('</svg>')) return raw;
+        } catch (_) {
+          if (attempt === 0) await new Promise((r) => setTimeout(r, delay));
+          delay *= 2;
+        }
+      }
+      return '';
+    }
+
+    function getPaletteColors(paletteKey) {
+      const palettes = {
+        chroma_emerald: ['#FFFFFF', '#0F172A', '#22D3EE', '#A7F3D0'],
+        luxury_gold: ['#FDE68A', '#F59E0B', '#D97706', '#FEF3C7'],
+        cyber_neon: ['#22D3EE', '#A855F7', '#EC4899', '#38BDF8'],
+        corporate_blue: ['#2563EB', '#0EA5E9', '#1E293B', '#60A5FA'],
+        sunset_pop: ['#FB7185', '#FBBF24', '#2DD4BF', '#F43F5E']
+      };
+      return palettes[paletteKey] || palettes.cyber_neon;
+    }
+
+    function buildProceduralAsset(promptText, style, paletteKey, isMotion) {
+      const colors = getPaletteColors(paletteKey);
+      let seed = 0;
+      for (let i = 0; i < promptText.length; i++) seed = (seed * 31 + promptText.charCodeAt(i)) % 10000;
+
+      if (isMotion) {
+        const isIso = style === 'isometric_icon';
+        const isParticles = style === 'luxury_gold';
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+    canvas { display: block; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <canvas id="studioCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById('studioCanvas');
+    const ctx = canvas.getContext('2d');
+    const colors = ${JSON.stringify(colors)};
+    const seed = ${seed};
+    const modeStyle = ${JSON.stringify(style)};
+    let startTime = performance.now();
+
+    function resize() {
+      canvas.width = window.innerWidth || 1920;
+      canvas.height = window.innerHeight || 1080;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'RESTART_ANIMATION') startTime = performance.now();
+    });
+
+    const nodes = Array.from({ length: 42 }, (_, i) => ({
+      a: (i / 42) * Math.PI * 2 + (seed % 7),
+      rFactor: 0.15 + ((i * 19 + seed) % 70) / 100,
+      size: 0.008 + (i % 5) * 0.004,
+      speed: 0.5 + (i % 4) * 0.25,
+      color: colors[i % colors.length]
+    }));
+
+    function drawFrame(now) {
+      if (window.__STUDIO_PAUSED__) { requestAnimationFrame(drawFrame); return; }
+      const w = canvas.width, h = canvas.height;
+      const t = (now - startTime) * 0.001;
+      const minD = Math.min(w, h);
+
+      ctx.clearRect(0, 0, w, h);
+      const bg = window.__STUDIO_BG__;
+      if (bg && bg !== 'transparent') {
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      ctx.save();
+      ctx.translate(w * 0.5, h * 0.5);
+
+      if (modeStyle === 'isometric_icon') {
+        // Animated Floating Isometric Cubes
+        for (let i = -1; i <= 1; i++) {
+          const floatY = Math.sin(t * 2.4 + i * 1.4) * minD * 0.03;
+          const ox = i * minD * 0.22;
+          const oy = Math.abs(i) * minD * 0.08 + floatY;
+          const s = minD * 0.11;
+          ctx.save();
+          ctx.translate(ox, oy);
+          ctx.fillStyle = colors[0];
+          ctx.beginPath();
+          ctx.moveTo(0, -s); ctx.lineTo(s * 0.86, -s * 0.5); ctx.lineTo(0, 0); ctx.lineTo(-s * 0.86, -s * 0.5);
+          ctx.closePath(); ctx.fill();
+
+          ctx.fillStyle = colors[1];
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.86, -s * 0.5); ctx.lineTo(0, 0); ctx.lineTo(0, s); ctx.lineTo(-s * 0.86, s * 0.5);
+          ctx.closePath(); ctx.fill();
+
+          ctx.fillStyle = colors[2];
+          ctx.beginPath();
+          ctx.moveTo(s * 0.86, -s * 0.5); ctx.lineTo(0, 0); ctx.lineTo(0, s); ctx.lineTo(s * 0.86, s * 0.5);
+          ctx.closePath(); ctx.fill();
+          ctx.restore();
+        }
+      } else {
+        // Dynamic Geometric Orbital & Particle Field
+        const rings = 5;
+        for (let r = 1; r <= rings; r++) {
+          ctx.save();
+          ctx.rotate(t * (r % 2 === 0 ? 0.4 : -0.3) * (1 + r * 0.1));
+          ctx.strokeStyle = colors[r % colors.length];
+          ctx.globalAlpha = 0.75;
+          ctx.lineWidth = Math.max(2, minD * 0.006);
+          const rad = minD * (0.08 * r);
+          const sides = 3 + ((seed + r) % 5);
+          ctx.beginPath();
+          for (let s = 0; s <= sides; s++) {
+            const ang = (s / sides) * Math.PI * 2;
+            const px = Math.cos(ang) * rad;
+            const py = Math.sin(ang) * rad;
+            if (s === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        for (const n of nodes) {
+          const ang = n.a + t * n.speed * (modeStyle === 'luxury_gold' ? 0.45 : 0.8);
+          const dist = minD * 0.42 * n.rFactor * (1 + Math.sin(t * 1.5 + n.a) * 0.08);
+          const nx = Math.cos(ang) * dist;
+          const ny = Math.sin(ang) * dist;
+          ctx.fillStyle = n.color;
+          ctx.globalAlpha = 0.85;
+          ctx.beginPath();
+          ctx.arc(nx, ny, minD * n.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.restore();
+      requestAnimationFrame(drawFrame);
+    }
+    requestAnimationFrame(drawFrame);
+  <\/script>
+</body>
+</html>`;
+      } else {
+        // Pure 4096x4096 SVG Generator
+        const petals = 8 + (seed % 8);
+        let shapesXml = '';
+        for (let i = 0; i < petals; i++) {
+          const angle = (360 / petals) * i;
+          const c1 = colors[i % colors.length];
+          const c2 = colors[(i + 1) % colors.length];
+          if (style === 'isometric_icon') {
+            const dx = (i - petals / 2) * 260;
+            const dy = Math.abs(i - petals / 2) * 140;
+            shapesXml += `<polygon points="${2048 + dx},${1400 + dy} ${2280 + dx},${1535 + dy} ${2048 + dx},${1670 + dy} ${1816 + dx},${1535 + dy}" fill="${c1}" />`;
+            shapesXml += `<polygon points="${1816 + dx},${1535 + dy} ${2048 + dx},${1670 + dy} ${2048 + dx},${1960 + dy} ${1816 + dx},${1825 + dy}" fill="${c2}" />`;
+          } else {
+            shapesXml += `<path d="M 0,-1520 C 280,-1120 280,-680 0,-340 C -280,-680 -280,-1120 0,-1520 Z" fill="${c1}" fill-opacity="0.82" transform="translate(2048,2048) rotate(${angle})" />`;
+            shapesXml += `<polygon points="0,-960 150,-560 0,-240 -150,-560" fill="${c2}" fill-opacity="0.9" transform="translate(2048,2048) rotate(${angle + 180 / petals})" />`;
+          }
+        }
+
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4096 4096" width="4096" height="4096">
+  <g id="ProceduralVectorGroup">
+    <circle cx="2048" cy="2048" r="1680" fill="none" stroke="${colors[0]}" stroke-width="24" />
+    ${shapesXml}
+    <circle cx="2048" cy="2048" r="280" fill="${colors[1]}" />
+    <circle cx="2048" cy="2048" r="120" fill="${colors[2]}" />
+  </g>
+</svg>`;
+      }
+    }
+
+    /* ============================================================================
+       7. KOLOM 2: MANUAL CODE & FILE UPLOAD (.HTML / .SVG)
+       ============================================================================ */
+    function handleFileUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = String(e.target?.result || '');
+        const cleanName = file.name.replace(/\.(html|htm|svg)$/i, '').replace(/\s+/g, '_');
+        document.getElementById('manual-filename-input').value = cleanName;
+        document.getElementById('manual-code-textarea').value = content;
+        updateCodeCharCount();
+
+        // Open drawer so user can review or immediately save
+        document.getElementById('drawer-code').classList.remove('hidden');
+        document.getElementById('drawer-prompt').classList.add('hidden');
+        showToast(`File "${file.name}" dimuat ke editor kode.`, 'info');
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function handleSaveManualCode() {
+      const rawName = document.getElementById('manual-filename-input').value.trim();
+      const rawCode = document.getElementById('manual-code-textarea').value.trim();
+
+      if (!rawCode) {
+        showToast('Tempel kode HTML atau SVG terlebih dahulu.', 'warning');
+        return;
+      }
+
+      const isSvg = /<svg[\s>]/i.test(rawCode) && !/<canvas[\s>]/i.test(rawCode);
+      const detectedType = isSvg ? 'vector' : 'motion';
+      const safeName = (rawName || (isSvg ? 'Manual_Vector_4K' : 'Manual_Motion_60fps')).replace(/\s+/g, '_');
+
+      const finalCode = isSvg ? rawCode : normalizeHtmlDocument(rawCode);
+
+      const newAsset = {
+        id: 'manual-' + Date.now(),
+        name: safeName,
+        type: detectedType,
+        tag: isSvg ? '4096×4096 • Manual SVG' : '60 FPS • Manual HTML5',
+        description: 'Custom imported code asset',
+        defaultBg: isSvg ? 'transparent' : '#0B0D17',
+        code: finalCode
+      };
+
+      state.assets.unshift(newAsset);
+      document.getElementById('manual-filename-input').value = '';
+      document.getElementById('manual-code-textarea').value = '';
+      updateCodeCharCount();
+      toggleDrawer('code');
+
+      if (state.outputMode !== detectedType) {
+        setOutputMode(detectedType);
+      }
+      selectAsset(newAsset.id, true);
+      renderAssetLibrary();
+      showToast(`Kode "${safeName}" ditambahkan ke antrean!`, 'success');
+      logPreflight(`> Added Manual [${detectedType.toUpperCase()}]: ${safeName}`, 'info');
+    }
+
+    function normalizeHtmlDocument(code) {
+      if (/<html[\s>]/i.test(code)) return code;
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+    canvas { display: block; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+${code}
+</body>
+</html>`;
+    }
+
+    /* ============================================================================
+       8. ASSET LIBRARY MANAGEMENT (SEARCH, QUICK SELECT, DELETE, CLEAR HISTORY)
+       ============================================================================ */
+    function getSelectedAsset() {
+      return state.assets.find((a) => a.id === state.selectedAssetId) || state.assets[0] || null;
+    }
+
+    function renderAssetLibrary() {
+      const listEl = document.getElementById('asset-library-list');
+      const query = (document.getElementById('preset-search-input')?.value || '').toLowerCase().trim();
+
+      const filtered = state.assets.filter((item) => {
+        const matchesQuery =
+          !query ||
+          item.name.toLowerCase().includes(query) ||
+          item.tag.toLowerCase().includes(query) ||
+          (item.description && item.description.toLowerCase().includes(query));
+        return matchesQuery;
+      });
+
+      document.getElementById('library-count-badge').textContent = `${filtered.length} file terdeteksi`;
+      document.getElementById('header-preset-count').textContent = state.assets.length;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div class="rounded-xl border border-dashed border-studio-border p-5 text-center text-xs text-slate-500">
+            Tidak ada preset atau aset yang cocok dengan pencarian.
+          </div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered
+        .map((item) => {
+          const isSelected = item.id === state.selectedAssetId;
+          const isMotion = item.type === 'motion';
+          const badgeClass = isMotion
+            ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+            : 'bg-purple-500/15 text-purple-300 border-purple-500/30';
+
+          return `
+            <div onclick="selectAsset('${item.id}', false)"
+              class="group rounded-xl border p-2.5 cursor-pointer transition-all flex items-center justify-between gap-2 ${
+                isSelected
+                  ? 'bg-indigo-600/15 border-indigo-500 shadow-sm'
+                  : 'bg-studio-input/80 border-studio-border hover:border-slate-600'
+              }">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5">
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${badgeClass}">
+                    ${isMotion ? 'MOTION' : 'SVG'}
+                  </span>
+                  <span class="text-xs font-semibold text-white truncate">${escapeHtml(item.name)}</span>
+                </div>
+                <div class="text-[10px] font-mono text-slate-400 mt-1 truncate">${escapeHtml(item.tag)}</div>
+              </div>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="event.stopPropagation(); quickSelectAndRun('${item.id}')"
+                  title="Quick Select & Run"
+                  class="p-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition-colors">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                  </svg>
+                </button>
+                <button type="button" onclick="event.stopPropagation(); deleteAsset('${item.id}')"
+                  title="Hapus Aset"
+                  class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-500/25 text-slate-400 hover:text-rose-300 border border-transparent hover:border-rose-500/30 transition-colors">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                  </svg>
+                </button>
+              </div>
+            </div>`;
+        })
+        .join('');
+    }
+
+    function selectAsset(id, loadImmediately = false) {
+      const asset = state.assets.find((a) => a.id === id);
+      if (!asset) return;
+      state.selectedAssetId = id;
+
+      if (state.outputMode !== asset.type) {
+        state.outputMode = asset.type;
+        setOutputMode(asset.type);
+      }
+
+      renderAssetLibrary();
+      if (loadImmediately) {
+        loadAssetIntoLivePreview(asset);
+      }
+    }
+
+    function quickSelectAndRun(id) {
+      selectAsset(id, true);
+      const asset = getSelectedAsset();
+      if (asset) {
+        showToast(`Quick Loaded: ${asset.name}`, 'info');
+        logPreflight(`> Quick Select & Run: ${asset.name}`, 'info');
+      }
+    }
+
+    function deleteAsset(id) {
+      if (state.assets.length <= 1) {
+        showToast('Minimal 1 aset harus tetap ada di library.', 'warning');
+        return;
+      }
+      state.assets = state.assets.filter((a) => a.id !== id);
+      if (state.selectedAssetId === id) {
+        state.selectedAssetId = state.assets[0].id;
+        loadAssetIntoLivePreview(state.assets[0]);
+      }
+      renderAssetLibrary();
+      showToast('Aset dihapus dari daftar.', 'info');
+    }
+
+    function handleClearHistory() {
+      const btn = document.getElementById('btn-clear-history');
+      if (!state.clearConfirmPending) {
+        state.clearConfirmPending = true;
+        btn.textContent = 'Confirm Reset?';
+        btn.classList.add('bg-rose-500/20', 'border-rose-500/50');
+        setTimeout(() => {
+          state.clearConfirmPending = false;
+          btn.textContent = 'Clear History';
+          btn.classList.remove('bg-rose-500/20', 'border-rose-500/50');
+        }, 3000);
+        return;
+      }
+
+      state.clearConfirmPending = false;
+      btn.textContent = 'Clear History';
+      btn.classList.remove('bg-rose-500/20', 'border-rose-500/50');
+
+      state.assets = [...BUILTIN_PRESETS];
+      state.selectedAssetId = state.assets[0].id;
+      renderAssetLibrary();
+      selectAsset(state.selectedAssetId, true);
+      showToast('Riwayat kustom dibersihkan. Preset bawaan dipulihkan.', 'success');
+      logPreflight('> Clear History: Library dikembalikan ke 4 preset standar.', 'warn');
+    }
+
+    /* ============================================================================
+       9. MAIN EXECUTE BUTTON ("GENERATE") & LIVE PREVIEW STAGE
+       ============================================================================ */
+    function executeGenerate() {
+      const asset = getSelectedAsset();
+      if (!asset) {
+        showToast('Pilih aset terlebih dahulu dari daftar.', 'warning');
+        return;
+      }
+      loadAssetIntoLivePreview(asset);
+      generateAdobeStockMetadata(true);
+      logPreflight(`> GENERATE executed: "${asset.name}" dimuat ke Live Preview.`, 'success');
+      showToast(`Live Preview diperbarui: ${asset.name}`, 'success');
+    }
+
+    function buildInjectedMotionHtml(rawHtml, bgColor, isPaused) {
+      const bridgeScript = `
+<script>
+  window.__STUDIO_BG__ = ${JSON.stringify(bgColor)};
+  window.__STUDIO_PAUSED__ = ${JSON.stringify(isPaused)};
+  (function() {
+    let frames = 0;
+    let lastTick = performance.now();
+    function meterFps(now) {
+      frames++;
+      if (now - lastTick >= 500) {
+        const fps = (frames * 1000) / (now - lastTick);
+        window.parent.postMessage({ type: 'STUDIO_FPS_UPDATE', fps: fps }, '*');
+        frames = 0;
+        lastTick = now;
+      }
+      requestAnimationFrame(meterFps);
+    }
+    requestAnimationFrame(meterFps);
+
+    window.addEventListener('message', function(e) {
+      if (!e.data) return;
+      if (e.data.type === 'SET_STUDIO_BG') {
+        window.__STUDIO_BG__ = e.data.bg;
+        document.body.style.backgroundColor = e.data.bg === 'transparent' ? 'transparent' : e.data.bg;
+      } else if (e.data.type === 'SET_STUDIO_PAUSED') {
+        window.__STUDIO_PAUSED__ = e.data.paused;
+      }
+    });
+  })();
+<\/script>`;
+
+      let doc = normalizeHtmlDocument(rawHtml);
+      if (/<\/head>/i.test(doc)) {
+        doc = doc.replace(/<\/head>/i, `${bridgeScript}\n</head>`);
+      } else {
+        doc = bridgeScript + doc;
+      }
+      return doc;
+    }
+
+    function loadAssetIntoLivePreview(asset) {
+      document.getElementById('active-asset-badge').textContent = asset.name;
+      state.isPaused = false;
+      updatePlaybackButtonUI();
+
+      // Apply asset default background if user hasn't explicitly overridden
+      if (asset.defaultBg) {
+        state.viewportBg = asset.defaultBg;
+      }
+      applyViewportBackdropVisuals();
+
+      const iframeEl = document.getElementById('live-preview-iframe');
+      const svgHostEl = document.getElementById('live-preview-svg-host');
+
+      if (asset.type === 'motion') {
+        iframeEl.classList.remove('hidden');
+        svgHostEl.classList.add('hidden');
+        svgHostEl.innerHTML = '';
+
+        const injectedDoc = buildInjectedMotionHtml(asset.code, state.viewportBg, false);
+        iframeEl.srcdoc = injectedDoc;
+      } else {
+        iframeEl.classList.add('hidden');
+        iframeEl.srcdoc = '';
+        svgHostEl.classList.remove('hidden');
+
+        const cleanSvg = prepareSanitizedSvgString(asset.code, false);
+        svgHostEl.innerHTML = cleanSvg;
+        const svgNode = svgHostEl.querySelector('svg');
+        if (svgNode) {
+          svgNode.style.width = '100%';
+          svgNode.style.height = '100%';
+          svgNode.style.maxWidth = '100%';
+          svgNode.style.maxHeight = '100%';
+        }
+        document.getElementById('live-fps-counter').textContent = 'STATIC VECTOR';
+      }
+
+      updateExportSpecs();
+      logPreflight(`> Siap: ${asset.name}`, 'success');
+    }
+
+    function setViewportBackground(colorValue, label) {
+      state.viewportBg = colorValue;
+      applyViewportBackdropVisuals();
+
+      const iframeEl = document.getElementById('live-preview-iframe');
+      if (iframeEl && !iframeEl.classList.contains('hidden') && iframeEl.contentWindow) {
+        iframeEl.contentWindow.postMessage({ type: 'SET_STUDIO_BG', bg: colorValue }, '*');
+      }
+      logPreflight(`> Backdrop kanvas diubah: ${label}`, 'info');
+    }
+
+    function applyViewportBackdropVisuals() {
+      const wrapper = document.getElementById('preview-aspect-wrapper');
+      if (state.viewportBg === 'transparent') {
+        wrapper.style.backgroundColor = 'transparent';
+        wrapper.classList.add('checkerboard-bg');
+      } else {
+        wrapper.classList.remove('checkerboard-bg');
+        wrapper.style.backgroundColor = state.viewportBg;
+      }
+    }
+
+    function togglePlayback() {
+      const asset = getSelectedAsset();
+      if (!asset || asset.type !== 'motion') {
+        showToast('Kontrol Play/Pause hanya berlaku untuk mode Video Motion.', 'info');
+        return;
+      }
+      state.isPaused = !state.isPaused;
+      updatePlaybackButtonUI();
+
+      const iframeEl = document.getElementById('live-preview-iframe');
+      if (iframeEl.contentWindow) {
+        iframeEl.contentWindow.postMessage({ type: 'SET_STUDIO_PAUSED', paused: state.isPaused }, '*');
+      }
+    }
+
+    function updatePlaybackButtonUI() {
+      document.getElementById('icon-pause').classList.toggle('hidden', state.isPaused);
+      document.getElementById('icon-play').classList.toggle('hidden', !state.isPaused);
+      document.getElementById('play-pause-label').textContent = state.isPaused ? 'Play' : 'Pause';
+    }
+
+    function restartPreviewFrame() {
+      const asset = getSelectedAsset();
+      if (!asset) return;
+      if (asset.type === 'motion') {
+        const iframeEl = document.getElementById('live-preview-iframe');
+        if (iframeEl.contentWindow) {
+          iframeEl.contentWindow.postMessage({ type: 'RESTART_ANIMATION' }, '*');
+        }
+        state.isPaused = false;
+        updatePlaybackButtonUI();
+        logPreflight('> Frame animasi di-restart ke t = 0.00s', 'info');
+      } else {
+        loadAssetIntoLivePreview(asset);
+      }
+    }
+
+    /* ============================================================================
+       10. ADOBE STOCK TECHNICAL CURATION & EXPORT SPECS CALCULATOR
+       ============================================================================ */
+    function getMotionTargetDimensions() {
+      const aspect = document.getElementById('motion-aspect-select').value;
+      const res = document.getElementById('motion-res-select').value;
+      const is4k = res === '4k';
+
+      if (aspect === '16:9') {
+        return is4k ? { width: 3840, height: 2160 } : { width: 1920, height: 1080 };
+      } else if (aspect === '9:16') {
+        return is4k ? { width: 2160, height: 3840 } : { width: 1080, height: 1920 };
+      } else {
+        return is4k ? { width: 2160, height: 2160 } : { width: 1080, height: 1080 };
+      }
+    }
+
+    function getVectorTargetDimensions() {
+      const sel = document.getElementById('vector-size-select').value;
+      if (sel === '4096x4096') return { width: 4096, height: 4096 };
+      if (sel === '1920x1080') return { width: 1920, height: 1080 };
+      const cw = Math.max(512, Math.min(8192, parseInt(document.getElementById('vector-custom-w').value, 10) || 4096));
+      const ch = Math.max(512, Math.min(8192, parseInt(document.getElementById('vector-custom-h').value, 10) || 4096));
+      return { width: cw, height: ch };
+    }
+
+    function handleVectorSizeChange() {
+      const val = document.getElementById('vector-size-select').value;
+      const customDimsEl = document.getElementById('vector-custom-dims');
+      const flagsEl = document.getElementById('vector-compliance-flags');
+      if (val === 'custom') {
+        customDimsEl.classList.remove('hidden');
+        flagsEl.classList.remove('sm:col-span-2');
+        flagsEl.classList.add('sm:col-span-3');
+      } else {
+        customDimsEl.classList.add('hidden');
+        flagsEl.classList.remove('sm:col-span-3');
+        flagsEl.classList.add('sm:col-span-2');
+      }
+      updateExportSpecs();
+    }
+
+    function applyVectorTransparentToggle() {
+      const isTransparent = document.getElementById('vector-transparent-toggle').checked;
+      if (state.outputMode === 'vector') {
+        setViewportBackground(isTransparent ? 'transparent' : '#FFFFFF', isTransparent ? 'Transparent Checkerboard' : 'Solid White #FFFFFF');
+      }
+      updateExportSpecs();
+    }
+
+    function updateExportSpecs() {
+      const wrapper = document.getElementById('preview-aspect-wrapper');
+      const dimBadge = document.getElementById('preview-dim-badge');
+      const summaryEl = document.getElementById('adobe-compliance-summary');
+
+      if (state.outputMode === 'motion') {
+        const { width, height } = getMotionTargetDimensions();
+        const aspect = document.getElementById('motion-aspect-select').value;
+        const duration = document.getElementById('motion-duration-select').value;
+        const fps = document.getElementById('motion-fps-select').value;
+        const codec = document.getElementById('motion-codec-select')?.value || 'mp4';
+
+        wrapper.classList.remove('aspect-video', 'aspect-[9/16]', 'aspect-square', 'max-w-[640px]', 'max-w-[260px]', 'max-w-[360px]');
+        if (aspect === '16:9') {
+          wrapper.classList.add('aspect-video', 'max-w-[640px]');
+        } else if (aspect === '9:16') {
+          wrapper.classList.add('aspect-[9/16]', 'max-w-[260px]');
+        } else {
+          wrapper.classList.add('aspect-square', 'max-w-[360px]');
+        }
+
+        dimBadge.textContent = `${width}×${height}`;
+        const codecLabel = codec === 'mp4' ? 'MP4 H.264' : codec.toUpperCase();
+        summaryEl.textContent = `High-Bitrate 20.00 Mbps target • Native ${width}x${height} • ${fps} fps • ${duration} s • ${codecLabel} • No audio track • Adobe-listed frame size • No upscaling`;
+        document.getElementById('btn-render-label').textContent = `+ Render & Download Video Motion (${codec === 'mp4' ? 'MP4 • 20 Mbps' : 'WebM • 20 Mbps'})`;
+      } else {
+        const { width, height } = getVectorTargetDimensions();
+        const isTransparent = document.getElementById('vector-transparent-toggle').checked;
+
+        wrapper.classList.remove('aspect-video', 'aspect-[9/16]', 'aspect-square', 'max-w-[640px]', 'max-w-[260px]', 'max-w-[360px]');
+        if (width > height) {
+          wrapper.classList.add('aspect-video', 'max-w-[640px]');
+        } else {
+          wrapper.classList.add('aspect-square', 'max-w-[360px]');
+        }
+
+        dimBadge.textContent = `${width}×${height} px`;
+        summaryEl.textContent = `Pure XML SVG 1.1 • Native ${width}x${height} px • RGB Mode • Clean Closed Paths • ${isTransparent ? 'Transparent Artboard' : 'Solid White Backdrop'} • Zero Raster Bitmaps`;
+        document.getElementById('btn-render-label').textContent = '+ Render & Download Pure Vector (.SVG)';
+      }
+    }
+
+    /* ============================================================================
+       11. ADOBE STOCK RENDER & EXPORT ENGINE (SVG VALIDATOR + MP4/WEBM ENCODERS)
+       ============================================================================ */
+    function startRenderAndDownload() {
+      const asset = getSelectedAsset();
+      if (!asset) {
+        showToast('Pilih aset terlebih dahulu sebelum merender.', 'warning');
+        return;
+      }
+
+      if (state.outputMode === 'motion' || asset.type === 'motion') {
+        renderAndDownloadNativeVideo(asset);
+      } else {
+        renderAndDownloadPureSvg(asset);
+      }
+    }
+
+    function prepareSanitizedSvgString(rawSvgCode, forExport = false) {
+      const { width, height } = getVectorTargetDimensions();
+      const isTransparent = document.getElementById('vector-transparent-toggle')?.checked ?? true;
+
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(rawSvgCode, 'image/svg+xml');
+        const parserError = doc.querySelector('parsererror');
+        if (parserError) {
+          throw new Error('Struktur XML SVG tidak valid.');
+        }
+
+        const svgEl = doc.documentElement;
+        if (!svgEl || svgEl.tagName.toLowerCase() !== 'svg') {
+          throw new Error('Elemen root <svg> tidak ditemukan.');
+        }
+
+        // Remove prohibited raster bitmap nodes (<image>, <foreignObject>) per Adobe Stock rules
+        svgEl.querySelectorAll('image, foreignObject').forEach((node) => node.remove());
+
+        if (!svgEl.getAttribute('xmlns')) {
+          svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        }
+        svgEl.setAttribute('version', '1.1');
+
+        if (!svgEl.getAttribute('viewBox')) {
+          svgEl.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        }
+
+        if (forExport) {
+          svgEl.setAttribute('width', String(width));
+          svgEl.setAttribute('height', String(height));
+
+          if (!isTransparent) {
+            const vbParts = (svgEl.getAttribute('viewBox') || `0 0 ${width} ${height}`).split(/[\s,]+/);
+            const bgRect = doc.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            bgRect.setAttribute('x', vbParts[0] || '0');
+            bgRect.setAttribute('y', vbParts[1] || '0');
+            bgRect.setAttribute('width', vbParts[2] || String(width));
+            bgRect.setAttribute('height', vbParts[3] || String(height));
+            bgRect.setAttribute('fill', '#FFFFFF');
+            svgEl.insertBefore(bgRect, svgEl.firstChild);
+          }
+        }
+
+        const serializer = new XMLSerializer();
+        let serialized = serializer.serializeToString(svgEl);
+        if (forExport && !serialized.startsWith('<?xml')) {
+          serialized = `<?xml version="1.0" encoding="UTF-8"?>\n${serialized}`;
+        }
+        return serialized;
+      } catch (err) {
+        if (forExport) throw err;
+        return rawSvgCode;
+      }
+    }
+
+    function renderAndDownloadPureSvg(asset) {
+      const { width, height } = getVectorTargetDimensions();
+      logPreflight(`> Memvalidasi struktur XML SVG (${width}×${height} px)...`, 'info');
+
+      try {
+        const cleanSvgXml = prepareSanitizedSvgString(asset.code, true);
+        const blob = new Blob([cleanSvgXml], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const filename = `${asset.name}_AdobeStock_${width}x${height}.svg`;
+
+        triggerBrowserDownload(url, filename);
+
+        const sizeKb = (blob.size / 1024).toFixed(1);
+        const currentMeta = getCurrentMetadataSnapshot();
+        state.exportHistory.unshift({
+          id: 'exp-' + Date.now(),
+          filename,
+          type: 'VECTOR (.SVG)',
+          specs: `${width}×${height} px • Pure SVG 1.1 • RGB • Zero Bitmaps`,
+          sizeLabel: `${sizeKb} KB`,
+          contentTitle: currentMeta.title,
+          keywords: currentMeta.keywords,
+          url,
+          isVideo: false,
+          timestamp: new Date().toLocaleTimeString()
+        });
+        document.getElementById('header-export-count').textContent = state.exportHistory.length;
+
+        logPreflight(`> Lolos Kurasi SVG: xmlns valid, viewBox terkunci, 0 tag <image> bitmap (${sizeKb} KB).`, 'success');
+        logPreflight(`> Downloaded: ${filename}`, 'success');
+        showToast(`Pure SVG (${sizeKb} KB) berhasil diunduh!`, 'success');
+      } catch (err) {
+        logPreflight(`> Validasi SVG Gagal: ${err.message}`, 'error');
+        showToast('Gagal memvalidasi SVG: ' + err.message, 'error');
+      }
+    }
+
+    function getSupportedRecorderMimeType() {
+      const preferred = document.getElementById('motion-codec-select')?.value || 'vp9';
+      const candidates =
+        preferred === 'vp8'
+          ? ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm']
+          : ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+
+      for (const mime of candidates) {
+        if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(mime)) {
+          return { mime, ext: 'webm' };
+        }
+      }
+      return { mime: 'video/webm', ext: 'webm' };
+    }
+
+    async function findSupportedAvcConfig(width, height, fps, targetBitrate) {
+      if (typeof VideoEncoder === 'undefined' || typeof Mp4Muxer === 'undefined') {
+        return null;
+      }
+
+      const is4K = width * height > 2097152;
+      // Uji profil High, Main, dan Constrained Baseline (Level 5.1/5.2 untuk 4K, Level 4.2/4.0/3.1 untuk 1080p)
+      const codecCandidates = is4K
+        ? ['avc1.640033', 'avc1.4d0033', 'avc1.420033', 'avc1.42e033', 'avc1.640034']
+        : [
+            'avc1.64002a',
+            'avc1.4d002a',
+            'avc1.42002a',
+            'avc1.42e02a',
+            'avc1.640028',
+            'avc1.420028',
+            'avc1.42e01f',
+            'avc1.42001f'
+          ];
+
+      const hwModes = ['no-preference', 'prefer-hardware', 'prefer-software'];
+      const bitrates = [targetBitrate, 14000000, 8000000];
+
+      for (const hw of hwModes) {
+        for (const codec of codecCandidates) {
+          for (const bitrate of bitrates) {
+            try {
+              const support = await VideoEncoder.isConfigSupported({
+                codec,
+                width,
+                height,
+                bitrate,
+                framerate: fps,
+                hardwareAcceleration: hw,
+                avc: { format: 'avc' }
+              });
+              if (support && support.supported) {
+                return { codec, hardwareAcceleration: hw, bitrate };
+              }
+            } catch (_) {}
+          }
+        }
+      }
+      return null;
+    }
+
+    async function renderAndDownloadNativeVideo(asset) {
+      if (state.isRendering) return;
+
+      const selectedFormat = document.getElementById('motion-codec-select')?.value || 'mp4';
+      const { width, height } = getMotionTargetDimensions();
+      const durationSec = parseInt(document.getElementById('motion-duration-select').value, 10) || 10;
+      const fps = parseInt(document.getElementById('motion-fps-select').value, 10) || 30;
+
+      if (selectedFormat === 'mp4') {
+        const avcConfig = await findSupportedAvcConfig(width, height, fps, 20000000);
+        if (avcConfig) {
+          await renderMP4WithWebCodecs(asset, width, height, durationSec, fps, avcConfig);
+        } else {
+          logPreflight('> Mengaktifkan Pure WASM H.264 MP4 Encoder agar output tetap berformat .MP4...', 'info');
+          await renderMP4WithWasmEncoder(asset, width, height, durationSec, fps);
+        }
+        return;
+      }
+
+      renderWebMWithMediaRecorder(asset, width, height, durationSec, fps);
+    }
+
+    function createDeterministicRenderIframe(asset, width, height, effectiveBg) {
+      const renderIframe = document.createElement('iframe');
+      renderIframe.style.position = 'fixed';
+      renderIframe.style.right = '2px';
+      renderIframe.style.bottom = '2px';
+      renderIframe.style.width = '2px';
+      renderIframe.style.height = '2px';
+      renderIframe.style.opacity = '0.01';
+      renderIframe.style.border = '0';
+      renderIframe.style.pointerEvents = 'none';
+      renderIframe.style.zIndex = '1';
+      renderIframe.setAttribute('aria-hidden', 'true');
+
+      const deterministicBootstrap = `
+<script>
+  window.__STUDIO_BG__ = ${JSON.stringify(effectiveBg)};
+  window.__STUDIO_PAUSED__ = false;
+  (function() {
+    var virtualNow = 1000;
+    var rafQueue = [];
+    var timers = [];
+    var nextTimerId = 1;
+
+    window.__ADVANCE_FRAME__ = function(dtMs) {
+      virtualNow += dtMs;
+      // Execute due virtual timers (for custom code using setInterval/setTimeout)
+      for (var tIdx = timers.length - 1; tIdx >= 0; tIdx--) {
+        var tItem = timers[tIdx];
+        if (tItem && virtualNow >= tItem.nextRun) {
+          try { tItem.cb(); } catch (err) {}
+          if (tItem.interval > 0) {
+            tItem.nextRun += tItem.interval;
+          } else {
+            timers.splice(tIdx, 1);
+          }
+        }
+      }
+      // Execute requestAnimationFrame callbacks deterministically
+      var batch = rafQueue.splice(0, rafQueue.length);
+      for (var i = 0; i < batch.length; i++) {
+        try { batch[i](virtualNow); } catch (err) {}
+      }
+    };
+
+    var NATIVE_W = ${width};
+    var NATIVE_H = ${height};
+    try {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, get: function() { return NATIVE_W; } });
+      Object.defineProperty(window, 'innerHeight', { configurable: true, get: function() { return NATIVE_H; } });
+      Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, get: function() { return NATIVE_W; } });
+      Object.defineProperty(document.documentElement, 'clientHeight', { configurable: true, get: function() { return NATIVE_H; } });
+      Object.defineProperty(window, 'devicePixelRatio', { configurable: true, get: function() { return 1; } });
+    } catch (e) {}
+
+    try {
+      Object.defineProperty(performance, 'now', {
+        configurable: true,
+        writable: true,
+        value: function() { return virtualNow; }
+      });
+    } catch (e) {
+      try { performance.now = function() { return virtualNow; }; } catch (_) {}
+    }
+
+    try {
+      Date.now = function() { return Math.floor(1700000000000 + virtualNow); };
+    } catch (e) {}
+
+    window.requestAnimationFrame = function(cb) {
+      rafQueue.push(cb);
+      return rafQueue.length;
+    };
+    window.cancelAnimationFrame = function() {};
+
+    window.setTimeout = function(cb, delay) {
+      var id = nextTimerId++;
+      if (typeof cb === 'function') {
+        timers.push({ id: id, cb: cb, nextRun: virtualNow + Math.max(0, Number(delay) || 0), interval: 0 });
+      }
+      return id;
+    };
+    window.clearTimeout = function(id) {
+      timers = timers.filter(function(t) { return t.id !== id; });
+    };
+    window.setInterval = function(cb, delay) {
+      var id = nextTimerId++;
+      var step = Math.max(16, Number(delay) || 16);
+      if (typeof cb === 'function') {
+        timers.push({ id: id, cb: cb, nextRun: virtualNow + step, interval: step });
+      }
+      return id;
+    };
+    window.clearInterval = window.clearTimeout;
+  })();
+<\/script>`;
+
+      let nativeDoc = normalizeHtmlDocument(asset.code);
+      if (/<\/head>/i.test(nativeDoc)) {
+        nativeDoc = nativeDoc.replace(/<\/head>/i, `${deterministicBootstrap}\n</head>`);
+      } else if (/<body[^>]*>/i.test(nativeDoc)) {
+        nativeDoc = nativeDoc.replace(/<body([^>]*)>/i, `<head>${deterministicBootstrap}</head><body$1>`);
+      } else {
+        nativeDoc = `<!DOCTYPE html><html><head>${deterministicBootstrap}</head><body>${nativeDoc}</body></html>`;
+      }
+
+      return { renderIframe, nativeDoc };
+    }
+
+    async function renderMP4WithWebCodecs(asset, width, height, durationSec, fps, avcConfig) {
+      const totalFrames = durationSec * fps;
+      const effectiveBg = state.viewportBg === 'transparent' ? '#00FF00' : state.viewportBg;
+
+      state.isRendering = true;
+      const renderBtn = document.getElementById('btn-render-download');
+      renderBtn.disabled = true;
+
+      const progressWrapper = document.getElementById('render-progress-wrapper');
+      const progressBar = document.getElementById('render-progress-bar');
+      const progressPercent = document.getElementById('render-progress-percent');
+      const frameTelemetry = document.getElementById('render-frame-telemetry');
+      const progressLabel = document.getElementById('render-progress-label');
+
+      progressWrapper.classList.remove('hidden');
+      progressBar.style.width = '0%';
+      progressPercent.textContent = '0%';
+      progressLabel.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span><span>Encoding Native H.264 MP4 (${avcConfig.codec} • 20 Mbps)...</span>`;
+      frameTelemetry.textContent = `Frame 0 / ${totalFrames} • Native ${width}×${height}`;
+
+      logPreflight(`> Memulai Native MP4 Engine: ${width}×${height} @ ${fps}fps (${durationSec}s, ${avcConfig.codec})...`, 'info');
+
+      const { renderIframe, nativeDoc } = createDeterministicRenderIframe(asset, width, height, effectiveBg);
+
+      let aborted = false;
+      let started = false;
+      let videoEncoder = null;
+
+      const cleanup = () => {
+        if (videoEncoder && videoEncoder.state !== 'closed') {
+          try { videoEncoder.close(); } catch (_) {}
+        }
+        if (renderIframe && renderIframe.parentNode) {
+          renderIframe.parentNode.removeChild(renderIframe);
+        }
+        state.isRendering = false;
+        state.activeRenderAbort = null;
+        renderBtn.disabled = false;
+        progressWrapper.classList.add('hidden');
+      };
+
+      state.activeRenderAbort = () => {
+        aborted = true;
+        cleanup();
+        logPreflight('> Render MP4 dibatalkan oleh pengguna.', 'warn');
+        showToast('Proses render dibatalkan.', 'warning');
+      };
+
+      renderIframe.onload = async () => {
+        if (aborted || started) return;
+        const iWin = renderIframe.contentWindow;
+        // Ignore premature about:blank load event before srcdoc script initializes
+        if (!iWin || typeof iWin.__ADVANCE_FRAME__ !== 'function') return;
+        started = true;
+
+        try {
+          const iDoc = renderIframe.contentDocument;
+          if (iDoc && iDoc.body) iDoc.body.style.backgroundColor = effectiveBg;
+          try { iWin.dispatchEvent(new Event('resize')); } catch (_) {}
+
+          let targetCanvas = iDoc.querySelector('canvas');
+          if (!targetCanvas) {
+            targetCanvas = iDoc.createElement('canvas');
+            iDoc.body.appendChild(targetCanvas);
+          }
+          if (targetCanvas.width !== width || targetCanvas.height !== height) {
+            targetCanvas.width = width;
+            targetCanvas.height = height;
+          }
+
+          // Opaque same-document host canvas (RGBX, no alpha) required by H.264 VideoEncoder
+          const hostCanvas = document.createElement('canvas');
+          hostCanvas.width = width;
+          hostCanvas.height = height;
+          const hostCtx = hostCanvas.getContext('2d', { alpha: false, willReadFrequently: true });
+
+          let encoderError = null;
+          const muxer = new Mp4Muxer.Muxer({
+            target: new Mp4Muxer.ArrayBufferTarget(),
+            video: {
+              codec: 'avc',
+              width,
+              height
+            },
+            fastStart: 'in-memory',
+            firstTimestampBehavior: 'offset'
+          });
+
+          videoEncoder = new VideoEncoder({
+            output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+            error: (err) => {
+              encoderError = err;
+            }
+          });
+
+          videoEncoder.configure({
+            codec: avcConfig.codec,
+            width,
+            height,
+            bitrate: avcConfig.bitrate || 20000000,
+            framerate: fps,
+            hardwareAcceleration: avcConfig.hardwareAcceleration,
+            avc: { format: 'avc' }
+          });
+
+          const stepMs = 1000 / fps;
+          const frameDurationUs = Math.round(1000000 / fps);
+
+          for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
+            if (aborted) return;
+            if (encoderError) throw encoderError;
+
+            iWin.__ADVANCE_FRAME__(frameIdx === 0 ? 0 : stepMs);
+
+            // Composite frame onto opaque RGBX host canvas
+            hostCtx.fillStyle = effectiveBg;
+            hostCtx.fillRect(0, 0, width, height);
+            hostCtx.drawImage(targetCanvas, 0, 0, width, height);
+
+            const timestampUs = Math.round(frameIdx * (1000000 / fps));
+            let vFrame;
+            try {
+              vFrame = new VideoFrame(hostCanvas, {
+                timestamp: timestampUs,
+                duration: frameDurationUs,
+                alpha: 'discard'
+              });
+            } catch (_) {
+              const imgData = hostCtx.getImageData(0, 0, width, height);
+              vFrame = new VideoFrame(imgData.data, {
+                format: 'RGBX',
+                codedWidth: width,
+                codedHeight: height,
+                timestamp: timestampUs,
+                duration: frameDurationUs
+              });
+            }
+
+            const isKeyFrame = frameIdx === 0 || frameIdx % (fps * 2) === 0;
+            videoEncoder.encode(vFrame, { keyFrame: isKeyFrame });
+            vFrame.close();
+
+            if (videoEncoder.encodeQueueSize > 6) {
+              await videoEncoder.flush();
+              if (encoderError) throw encoderError;
+            }
+
+            if (frameIdx % 4 === 0 || frameIdx === totalFrames - 1) {
+              const pct = Math.min(99, Math.floor(((frameIdx + 1) / totalFrames) * 100));
+              progressBar.style.width = `${pct}%`;
+              progressPercent.textContent = `${pct}%`;
+              frameTelemetry.textContent = `Frame ${frameIdx + 1} / ${totalFrames} • Native ${width}×${height}`;
+              await new Promise((r) => setTimeout(r, 0));
+            }
+          }
+
+          if (aborted) return;
+          await videoEncoder.flush();
+          if (encoderError) throw encoderError;
+          videoEncoder.close();
+          muxer.finalize();
+
+          const { buffer } = muxer.target;
+          const blob = new Blob([buffer], { type: 'video/mp4' });
+          const url = URL.createObjectURL(blob);
+          const filename = `${asset.name}_AdobeStock_${width}x${height}_${fps}fps.mp4`;
+
+          progressBar.style.width = '100%';
+          progressPercent.textContent = '100%';
+
+          triggerBrowserDownload(url, filename);
+
+          const sizeMb = (blob.size / (1024 * 1024)).toFixed(2);
+          const currentMeta = getCurrentMetadataSnapshot();
+          state.exportHistory.unshift({
+            id: 'exp-' + Date.now(),
+            filename,
+            type: 'VIDEO (.MP4)',
+            specs: `${width}×${height} • ${fps}fps • ${durationSec}s • H.264 20 Mbps • Silent`,
+            sizeLabel: `${sizeMb} MB`,
+            contentTitle: currentMeta.title,
+            keywords: currentMeta.keywords,
+            url,
+            isVideo: true,
+            timestamp: new Date().toLocaleTimeString()
+          });
+          document.getElementById('header-export-count').textContent = state.exportHistory.length;
+
+          logPreflight(`> MP4 H.264 Selesai (${sizeMb} MB) • FastStart MOOV Atom • Codec: ${avcConfig.codec}`, 'success');
+          logPreflight(`> Downloaded: ${filename}`, 'success');
+          showToast(`MP4 selesai (${sizeMb} MB)! Mengunduh ${filename}`, 'success');
+          cleanup();
+        } catch (err) {
+          logPreflight(`> Beralih ke Pure WASM H.264 MP4 Encoder (${err.message})...`, 'warn');
+          cleanup();
+          await renderMP4WithWasmEncoder(asset, width, height, durationSec, fps);
+        }
+      };
+
+      renderIframe.srcdoc = nativeDoc;
+      document.body.appendChild(renderIframe);
+    }
+
+    async function renderMP4WithWasmEncoder(asset, width, height, durationSec, fps) {
+      if (typeof HME === 'undefined' || typeof HME.createH264MP4Encoder !== 'function') {
+        logPreflight('> ERROR: Library H.264 MP4 Encoder belum termuat. Periksa koneksi internet Anda.', 'error');
+        showToast('Gagal memuat encoder MP4. Periksa koneksi jaringan.', 'error');
+        return;
+      }
+
+      const evenW = width % 2 === 0 ? width : width - 1;
+      const evenH = height % 2 === 0 ? height : height - 1;
+      const totalFrames = durationSec * fps;
+      const effectiveBg = state.viewportBg === 'transparent' ? '#00FF00' : state.viewportBg;
+
+      state.isRendering = true;
+      const renderBtn = document.getElementById('btn-render-download');
+      renderBtn.disabled = true;
+
+      const progressWrapper = document.getElementById('render-progress-wrapper');
+      const progressBar = document.getElementById('render-progress-bar');
+      const progressPercent = document.getElementById('render-progress-percent');
+      const frameTelemetry = document.getElementById('render-frame-telemetry');
+      const progressLabel = document.getElementById('render-progress-label');
+
+      progressWrapper.classList.remove('hidden');
+      progressBar.style.width = '0%';
+      progressPercent.textContent = '0%';
+      progressLabel.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span><span>Encoding Pure WASM H.264 MP4 (20 Mbps)...</span>`;
+      frameTelemetry.textContent = `Frame 0 / ${totalFrames} • Native ${evenW}×${evenH}`;
+
+      const { renderIframe, nativeDoc } = createDeterministicRenderIframe(asset, evenW, evenH, effectiveBg);
+
+      let aborted = false;
+      let started = false;
+      let wasmEncoder = null;
+
+      const cleanup = () => {
+        if (wasmEncoder) {
+          try { wasmEncoder.delete(); } catch (_) {}
+          wasmEncoder = null;
+        }
+        if (renderIframe && renderIframe.parentNode) {
+          renderIframe.parentNode.removeChild(renderIframe);
+        }
+        state.isRendering = false;
+        state.activeRenderAbort = null;
+        renderBtn.disabled = false;
+        progressWrapper.classList.add('hidden');
+      };
+
+      state.activeRenderAbort = () => {
+        aborted = true;
+        cleanup();
+        logPreflight('> Render MP4 dibatalkan oleh pengguna.', 'warn');
+        showToast('Proses render dibatalkan.', 'warning');
+      };
+
+      renderIframe.onload = async () => {
+        if (aborted || started) return;
+        const iWin = renderIframe.contentWindow;
+        // Ignore premature about:blank load event before srcdoc script initializes
+        if (!iWin || typeof iWin.__ADVANCE_FRAME__ !== 'function') return;
+        started = true;
+
+        try {
+          const iDoc = renderIframe.contentDocument;
+          if (iDoc && iDoc.body) iDoc.body.style.backgroundColor = effectiveBg;
+          try { iWin.dispatchEvent(new Event('resize')); } catch (_) {}
+
+          let targetCanvas = iDoc.querySelector('canvas');
+          if (!targetCanvas) {
+            targetCanvas = iDoc.createElement('canvas');
+            iDoc.body.appendChild(targetCanvas);
+          }
+          targetCanvas.width = evenW;
+          targetCanvas.height = evenH;
+
+          const hostCanvas = document.createElement('canvas');
+          hostCanvas.width = evenW;
+          hostCanvas.height = evenH;
+          const hostCtx = hostCanvas.getContext('2d', { alpha: false, willReadFrequently: true });
+
+          wasmEncoder = await HME.createH264MP4Encoder();
+          wasmEncoder.width = evenW;
+          wasmEncoder.height = evenH;
+          wasmEncoder.frameRate = fps;
+          wasmEncoder.kbps = 20000;
+          wasmEncoder.speed = 6;
+          wasmEncoder.quantizationParameter = 18;
+          wasmEncoder.groupOfPictures = fps;
+          wasmEncoder.initialize();
+
+          const stepMs = 1000 / fps;
+
+          for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
+            if (aborted) return;
+
+            iWin.__ADVANCE_FRAME__(frameIdx === 0 ? 0 : stepMs);
+            hostCtx.fillStyle = effectiveBg;
+            hostCtx.fillRect(0, 0, evenW, evenH);
+            hostCtx.drawImage(targetCanvas, 0, 0, evenW, evenH);
+
+            const rgba = hostCtx.getImageData(0, 0, evenW, evenH).data;
+            wasmEncoder.addFrameRgba(rgba);
+
+            if (frameIdx % 2 === 0 || frameIdx === totalFrames - 1) {
+              const pct = Math.min(99, Math.floor(((frameIdx + 1) / totalFrames) * 100));
+              progressBar.style.width = `${pct}%`;
+              progressPercent.textContent = `${pct}%`;
+              frameTelemetry.textContent = `Frame ${frameIdx + 1} / ${totalFrames} • Native ${evenW}×${evenH} (.MP4)`;
+              await new Promise((r) => setTimeout(r, 0));
+            }
+          }
+
+          if (aborted) return;
+          wasmEncoder.finalize();
+          const outFilePath =
+            typeof wasmEncoder.outputFilename === 'string' && wasmEncoder.outputFilename
+              ? wasmEncoder.outputFilename
+              : typeof wasmEncoder.fileName === 'string' && wasmEncoder.fileName
+                ? wasmEncoder.fileName
+                : 'output.mp4';
+          const uint8Array = wasmEncoder.FS.readFile(outFilePath);
+          const blob = new Blob([uint8Array], { type: 'video/mp4' });
+          const url = URL.createObjectURL(blob);
+          const filename = `${asset.name}_AdobeStock_${evenW}x${evenH}_${fps}fps.mp4`;
+
+          progressBar.style.width = '100%';
+          progressPercent.textContent = '100%';
+
+          triggerBrowserDownload(url, filename);
+
+          const sizeMb = (blob.size / (1024 * 1024)).toFixed(2);
+          const currentMeta = getCurrentMetadataSnapshot();
+          state.exportHistory.unshift({
+            id: 'exp-' + Date.now(),
+            filename,
+            type: 'VIDEO (.MP4)',
+            specs: `${evenW}×${evenH} • ${fps}fps • ${durationSec}s • H.264 20 Mbps • Silent`,
+            sizeLabel: `${sizeMb} MB`,
+            contentTitle: currentMeta.title,
+            keywords: currentMeta.keywords,
+            url,
+            isVideo: true,
+            timestamp: new Date().toLocaleTimeString()
+          });
+          document.getElementById('header-export-count').textContent = state.exportHistory.length;
+
+          logPreflight(`> MP4 H.264 Selesai (${sizeMb} MB) • Format: video/mp4`, 'success');
+          logPreflight(`> Downloaded: ${filename}`, 'success');
+          showToast(`MP4 selesai (${sizeMb} MB)! Mengunduh ${filename}`, 'success');
+          cleanup();
+        } catch (err) {
+          logPreflight(`> MP4 Render Error: ${err.message}`, 'error');
+          showToast('Gagal merender MP4: ' + err.message, 'error');
+          cleanup();
+        }
+      };
+
+      renderIframe.srcdoc = nativeDoc;
+      document.body.appendChild(renderIframe);
+    }
+
+    function renderWebMWithMediaRecorder(asset, width, height, durationSec, fps) {
+      const totalFrames = durationSec * fps;
+      const formatInfo = getSupportedRecorderMimeType();
+      const effectiveBg = state.viewportBg === 'transparent' ? '#00FF00' : state.viewportBg;
+
+      state.isRendering = true;
+      const renderBtn = document.getElementById('btn-render-download');
+      renderBtn.disabled = true;
+
+      const progressWrapper = document.getElementById('render-progress-wrapper');
+      const progressBar = document.getElementById('render-progress-bar');
+      const progressPercent = document.getElementById('render-progress-percent');
+      const frameTelemetry = document.getElementById('render-frame-telemetry');
+      const progressLabel = document.getElementById('render-progress-label');
+
+      progressWrapper.classList.remove('hidden');
+      progressBar.style.width = '0%';
+      progressPercent.textContent = '0%';
+      progressLabel.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span><span>Recording Native Canvas Stream (${formatInfo.mime} • 20 Mbps)...</span>`;
+      frameTelemetry.textContent = `Frame 0 / ${totalFrames} • Native ${width}×${height}`;
+
+      logPreflight(`> Memulai Native Render: ${width}×${height} @ ${fps}fps (${durationSec}s, ${formatInfo.mime})...`, 'info');
+
+      const renderIframe = document.createElement('iframe');
+      renderIframe.style.position = 'fixed';
+      renderIframe.style.right = '2px';
+      renderIframe.style.bottom = '2px';
+      renderIframe.style.width = '2px';
+      renderIframe.style.height = '2px';
+      renderIframe.style.opacity = '0.01';
+      renderIframe.style.border = '0';
+      renderIframe.style.pointerEvents = 'none';
+      renderIframe.style.zIndex = '1';
+      renderIframe.setAttribute('aria-hidden', 'true');
+
+      let recorder = null;
+      let progressTimer = null;
+      let finishTimeout = null;
+      let streamRef = null;
+      let aborted = false;
+
+      const cleanup = () => {
+        if (progressTimer) clearInterval(progressTimer);
+        if (finishTimeout) clearTimeout(finishTimeout);
+        if (streamRef) {
+          try {
+            streamRef.getTracks().forEach((track) => track.stop());
+          } catch (_) {}
+        }
+        if (renderIframe && renderIframe.parentNode) {
+          renderIframe.parentNode.removeChild(renderIframe);
+        }
+        state.isRendering = false;
+        state.activeRenderAbort = null;
+        renderBtn.disabled = false;
+        progressWrapper.classList.add('hidden');
+      };
+
+      state.activeRenderAbort = () => {
+        aborted = true;
+        try {
+          if (recorder && recorder.state !== 'inactive') recorder.stop();
+        } catch (_) {}
+        cleanup();
+        logPreflight('> Render dibatalkan oleh pengguna.', 'warn');
+        showToast('Proses render dibatalkan.', 'warning');
+      };
+
+      const recorderBootstrap = `
+<script>
+  window.__STUDIO_BG__ = ${JSON.stringify(effectiveBg)};
+  window.__STUDIO_PAUSED__ = false;
+  window.__STUDIO_READY__ = true;
+  (function() {
+    const NATIVE_W = ${width};
+    const NATIVE_H = ${height};
+    try {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, get: function() { return NATIVE_W; } });
+      Object.defineProperty(window, 'innerHeight', { configurable: true, get: function() { return NATIVE_H; } });
+      Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, get: function() { return NATIVE_W; } });
+      Object.defineProperty(document.documentElement, 'clientHeight', { configurable: true, get: function() { return NATIVE_H; } });
+      Object.defineProperty(window, 'devicePixelRatio', { configurable: true, get: function() { return 1; } });
+    } catch (e) {}
+  })();
+<\/script>`;
+
+      let nativeDoc = normalizeHtmlDocument(asset.code);
+      if (/<\/head>/i.test(nativeDoc)) {
+        nativeDoc = nativeDoc.replace(/<\/head>/i, `${recorderBootstrap}\n</head>`);
+      } else {
+        nativeDoc = recorderBootstrap + nativeDoc;
+      }
+
+      let webmStarted = false;
+      renderIframe.onload = () => {
+        if (aborted || webmStarted) return;
+        const iWin = renderIframe.contentWindow;
+        if (!iWin || !iWin.__STUDIO_READY__) return;
+        webmStarted = true;
+        try {
+          const iDoc = renderIframe.contentDocument;
+          iDoc.body.style.backgroundColor = effectiveBg;
+
+          let targetCanvas = iDoc.querySelector('canvas');
+          if (!targetCanvas) {
+            targetCanvas = iDoc.createElement('canvas');
+            iDoc.body.appendChild(targetCanvas);
+          }
+
+          if (targetCanvas.width !== width || targetCanvas.height !== height) {
+            targetCanvas.width = width;
+            targetCanvas.height = height;
+          }
+
+          iWin.requestAnimationFrame(() => {
+            iWin.requestAnimationFrame(() => {
+              if (aborted) return;
+              try {
+                streamRef = targetCanvas.captureStream(fps);
+                const videoTrack = streamRef.getVideoTracks()[0];
+                if (videoTrack && typeof videoTrack.requestFrame === 'function') {
+                  videoTrack.requestFrame();
+                }
+
+                const chunks = [];
+                const recorderOptions = {
+                  mimeType: formatInfo.mime,
+                  videoBitsPerSecond: 20000000
+                };
+
+                try {
+                  recorder = new MediaRecorder(streamRef, recorderOptions);
+                } catch (_) {
+                  recorder = new MediaRecorder(streamRef, { mimeType: formatInfo.mime });
+                }
+
+                recorder.ondataavailable = (ev) => {
+                  if (ev.data && ev.data.size > 0) chunks.push(ev.data);
+                };
+
+                recorder.onerror = (ev) => {
+                  const errMsg = ev?.error?.message || 'MediaRecorder encoding error';
+                  logPreflight(`> MediaRecorder Error: ${errMsg}`, 'error');
+                  showToast('Encoder error: ' + errMsg, 'error');
+                  cleanup();
+                };
+
+                recorder.onstop = () => {
+                  if (aborted) return;
+                  const blob = new Blob(chunks, { type: formatInfo.mime });
+                  const url = URL.createObjectURL(blob);
+                  const filename = `${asset.name}_AdobeStock_${width}x${height}_${fps}fps.${formatInfo.ext}`;
+
+                  triggerBrowserDownload(url, filename);
+
+                  const sizeMb = (blob.size / (1024 * 1024)).toFixed(2);
+                  const currentMeta = getCurrentMetadataSnapshot();
+                  state.exportHistory.unshift({
+                    id: 'exp-' + Date.now(),
+                    filename,
+                    type: `VIDEO (.${formatInfo.ext.toUpperCase()})`,
+                    specs: `${width}×${height} • ${fps}fps • ${durationSec}s • 20 Mbps • Silent`,
+                    sizeLabel: `${sizeMb} MB`,
+                    contentTitle: currentMeta.title,
+                    keywords: currentMeta.keywords,
+                    url,
+                    isVideo: true,
+                    timestamp: new Date().toLocaleTimeString()
+                  });
+                  document.getElementById('header-export-count').textContent = state.exportHistory.length;
+
+                  logPreflight(`> Render Selesai (${sizeMb} MB) • Codec: ${formatInfo.mime}`, 'success');
+                  logPreflight(`> Downloaded: ${filename}`, 'success');
+                  showToast(`Render selesai (${sizeMb} MB)! Mengunduh ${filename}`, 'success');
+                  cleanup();
+                };
+
+                recorder.start(1000);
+                const recStart = performance.now();
+                const totalMs = durationSec * 1000;
+
+                progressTimer = setInterval(() => {
+                  const elapsed = performance.now() - recStart;
+                  const pct = Math.min(99, Math.floor((elapsed / totalMs) * 100));
+                  const curFrame = Math.min(totalFrames, Math.floor((elapsed / 1000) * fps));
+                  progressBar.style.width = `${pct}%`;
+                  progressPercent.textContent = `${pct}%`;
+                  frameTelemetry.textContent = `Frame ${curFrame} / ${totalFrames} • Native ${width}×${height}`;
+                }, 120);
+
+                finishTimeout = setTimeout(() => {
+                  progressBar.style.width = '100%';
+                  progressPercent.textContent = '100%';
+                  if (recorder && recorder.state !== 'inactive') {
+                    recorder.stop();
+                  }
+                }, totalMs + 150);
+              } catch (innerErr) {
+                logPreflight(`> CaptureStream Error: ${innerErr.message}`, 'error');
+                showToast('Gagal merekam kanvas: ' + innerErr.message, 'error');
+                cleanup();
+              }
+            });
+          });
+        } catch (err) {
+          logPreflight(`> Render Error: ${err.message}`, 'error');
+          showToast('Gagal memulai render: ' + err.message, 'error');
+          cleanup();
+        }
+      };
+
+      renderIframe.srcdoc = nativeDoc;
+      document.body.appendChild(renderIframe);
+    }
+
+    function cancelActiveRender() {
+      if (typeof state.activeRenderAbort === 'function') {
+        state.activeRenderAbort();
+      }
+    }
+
+    function triggerBrowserDownload(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    /* ============================================================================
+       12. ADOBE STOCK CONTENT TITLE, 30 KEYWORDS, COPY & CSV METADATA GENERATOR
+       ============================================================================ */
+    function getCurrentMetadataSnapshot() {
+      const titleEl = document.getElementById('seo-title-input');
+      const kwEl = document.getElementById('seo-keywords-textarea');
+      if (!titleEl?.value.trim() || !kwEl?.value.trim()) {
+        generateAdobeStockMetadata(true);
+      }
+      return {
+        title: (titleEl?.value || '').trim(),
+        keywords: (kwEl?.value || '').trim()
+      };
+    }
+
+    function updateMetadataCounters() {
+      const titleVal = document.getElementById('seo-title-input')?.value || '';
+      const kwVal = document.getElementById('seo-keywords-textarea')?.value || '';
+      const kwList = kwVal
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean);
+
+      const titlePill = document.getElementById('title-char-pill');
+      const kwPill = document.getElementById('keyword-count-pill');
+      if (titlePill) {
+        titlePill.textContent = `${titleVal.length} / 70 chars`;
+        titlePill.className =
+          titleVal.length > 70
+            ? 'text-[10px] font-mono text-amber-400'
+            : 'text-[10px] font-mono text-slate-400';
+      }
+      if (kwPill) {
+        kwPill.textContent = `${kwList.length} keywords`;
+      }
+    }
+
+    function copyTextToClipboard(text, buttonEl, labelSuccess = '✓ Copied!') {
+      if (!text) {
+        showToast('Tidak ada teks untuk disalin.', 'warning');
+        return;
+      }
+      const tempArea = document.createElement('textarea');
+      tempArea.value = text;
+      tempArea.style.position = 'fixed';
+      tempArea.style.left = '-9999px';
+      tempArea.style.top = '0';
+      document.body.appendChild(tempArea);
+      tempArea.focus();
+      tempArea.select();
+
+      let copied = false;
+      try {
+        copied = document.execCommand('copy');
+      } catch (_) {
+        copied = false;
+      }
+      document.body.removeChild(tempArea);
+
+      if (copied) {
+        showToast('Berhasil disalin ke clipboard!', 'success');
+        if (buttonEl) {
+          const spanEl = buttonEl.querySelector('span');
+          const origText = spanEl ? spanEl.textContent : buttonEl.textContent;
+          buttonEl.classList.add('!bg-emerald-600', '!border-emerald-500', '!text-white');
+          if (spanEl) spanEl.textContent = labelSuccess;
+          else buttonEl.textContent = labelSuccess;
+
+          setTimeout(() => {
+            buttonEl.classList.remove('!bg-emerald-600', '!border-emerald-500', '!text-white');
+            if (spanEl) spanEl.textContent = origText;
+            else buttonEl.textContent = origText;
+          }, 1600);
+        }
+      } else {
+        showToast('Gagal menyalin otomatis. Silakan tekan Ctrl+C.', 'warning');
+      }
+    }
+
+    function copyMetadataField(elementId, buttonEl) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      copyTextToClipboard(el.value.trim(), buttonEl);
+    }
+
+    function copyQueueMetadata(expId, field, buttonEl) {
+      const item = state.exportHistory.find((e) => e.id === expId);
+      if (!item) return;
+      const text = field === 'title' ? item.contentTitle : item.keywords;
+      copyTextToClipboard(text, buttonEl, '✓ Copied');
+    }
+
+    function generateAdobeStockMetadata(silent = false) {
+      const asset = getSelectedAsset();
+      const isMotion = state.outputMode === 'motion' || asset?.type === 'motion';
+      const baseName = asset
+        ? asset.name.replace(/_/g, ' ').replace(/\b(60fps|4k|hd|mp4|svg)\b/gi, '').replace(/\s+/g, ' ').trim()
+        : isMotion
+          ? 'Abstract Motion Graphics'
+          : 'Abstract Vector Graphic';
+      const desc = asset?.description || baseName;
+
+      const suffix = isMotion ? 'Motion Graphics Loop Background' : 'Modern Digital Vector Illustration';
+      const title = `${baseName} ${suffix}`.slice(0, 70).trim();
+
+      const motionKeywordPool = [
+        'motion graphics', 'animation', 'loop', 'seamless', 'background',
+        'abstract', 'digital', 'technology', 'modern', 'futuristic',
+        '4k', 'hd', 'vfx', 'visual effects', 'overlay',
+        'glowing', 'particles', 'light', 'energy', 'dynamic',
+        'design', 'creative', 'concept', 'cyber', 'geometric',
+        'network', 'data', 'hud', 'element', 'commercial'
+      ];
+
+      if (state.viewportBg && state.viewportBg.toUpperCase() === '#00FF00') {
+        motionKeywordPool.unshift('chroma key', 'green screen', 'keying');
+      }
+
+      const vectorKeywordPool = [
+        'vector', 'illustration', 'abstract', 'modern', 'geometric',
+        'technology', 'digital', 'design', 'graphic', 'icon',
+        'isolated', 'background', 'concept', 'business', 'network',
+        'creative', 'art', 'minimalist', 'shape', 'element',
+        'future', 'futuristic', 'data', 'symbol', 'template',
+        'banner', 'wallpaper', 'pattern', 'clean', 'commercial'
+      ];
+
+      const keywordPool = isMotion ? motionKeywordPool : vectorKeywordPool;
+
+      // Prepend context words from asset name/description
+      const contextWords = `${baseName} ${desc}`
+        .toLowerCase()
+        .replace(/[^a-z\s]/g, '')
+        .split(/\s+/)
+        .filter((w) => w.length > 2 && !['the', 'and', 'for', 'with', 'fps', 'svg', 'mp4', 'on'].includes(w));
+
+      const uniqueKeywords = Array.from(new Set([...contextWords, ...keywordPool])).slice(0, 30);
+
+      document.getElementById('seo-title-input').value = title;
+      document.getElementById('seo-keywords-textarea').value = uniqueKeywords.join(', ');
+      updateMetadataCounters();
+
+      if (!silent) {
+        showToast(`Content Title & 30 Keywords (${isMotion ? 'Video' : 'Vector'}) diperbarui!`, 'success');
+        logPreflight(`> Metadata Adobe Stock (${isMotion ? 'Video Motion' : 'Vector'}) siap di-copy.`, 'info');
+      }
+    }
+
+    function downloadMetadataCSV(expId = null) {
+      if (expId) {
+        const expItem = state.exportHistory.find((e) => e.id === expId);
+        if (!expItem) return;
+        const safeTitle = (expItem.contentTitle || '').replace(/"/g, '""');
+        const safeKeywords = (expItem.keywords || '').replace(/"/g, '""');
+        const categoryId = expItem.isVideo ? 1 : 8;
+        const csvContent = `Filename,Title,Keywords,Category,Releases\n"${expItem.filename}","${safeTitle}","${safeKeywords}",${categoryId},""`;
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        triggerBrowserDownload(url, `${expItem.filename.replace(/\.[^.]+$/, '')}_Metadata.csv`);
+        showToast('File CSV metadata Adobe Stock berhasil diunduh!', 'success');
+        return;
+      }
+
+      const asset = getSelectedAsset();
+      const isMotion = state.outputMode === 'motion' || asset?.type === 'motion';
+      let filename = '';
+      if (isMotion) {
+        const { width, height } = getMotionTargetDimensions();
+        const fps = document.getElementById('motion-fps-select')?.value || '30';
+        const ext = (document.getElementById('motion-codec-select')?.value || 'mp4') === 'mp4' ? 'mp4' : 'webm';
+        filename = `${asset ? asset.name : 'Motion_Asset'}_AdobeStock_${width}x${height}_${fps}fps.${ext}`;
+      } else {
+        const { width, height } = getVectorTargetDimensions();
+        filename = `${asset ? asset.name : 'Vector_Asset'}_AdobeStock_${width}x${height}.svg`;
+      }
+
+      const title = document.getElementById('seo-title-input').value.replace(/"/g, '""');
+      const keywords = document.getElementById('seo-keywords-textarea').value.replace(/"/g, '""');
+      const categoryId = isMotion ? 1 : 8;
+
+      // Official Adobe Stock Contributor CSV Header Format
+      const csvContent = `Filename,Title,Keywords,Category,Releases\n"${filename}","${title}","${keywords}",${categoryId},""`;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      triggerBrowserDownload(url, `${asset ? asset.name : 'AdobeStock'}_Metadata.csv`);
+      showToast('File CSV metadata Adobe Stock berhasil diunduh!', 'success');
+    }
+
+    /* ============================================================================
+       13. SECONDARY WORKSPACE TABS RENDERERS (PRESETS & EXPORT QUEUE)
+       ============================================================================ */
+    function renderPresetsGallery() {
+      const grid = document.getElementById('presets-gallery-grid');
+      if (!grid) return;
+      grid.innerHTML = state.assets
+        .map((item) => {
+          const isMotion = item.type === 'motion';
+          return `
+            <div class="rounded-xl bg-studio-card border border-studio-border p-4 flex flex-col justify-between gap-3">
+              <div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
+                    isMotion ? 'bg-cyan-500/15 text-cyan-300' : 'bg-purple-500/15 text-purple-300'
+                  }">${isMotion ? 'Video Motion' : 'Vector .SVG'}</span>
+                  <span class="text-[11px] font-mono text-slate-400">${escapeHtml(item.tag)}</span>
+                </div>
+                <h3 class="text-sm font-bold text-white mt-2">${escapeHtml(item.name)}</h3>
+                <p class="text-xs text-slate-400 mt-1 leading-relaxed">${escapeHtml(item.description || '')}</p>
+              </div>
+              <div class="pt-2 border-t border-studio-border flex items-center justify-end">
+                <button type="button" onclick="switchWorkspaceTab('create'); quickSelectAndRun('${item.id}')"
+                  class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+                  ⚡ Muat ke Live Studio
+                </button>
+              </div>
+            </div>`;
+        })
+        .join('');
+    }
+
+    function renderExportQueueTab() {
+      const list = document.getElementById('export-queue-list');
+      if (!list) return;
+      if (state.exportHistory.length === 0) {
+        list.innerHTML = `
+          <div class="text-center py-12 text-slate-500 text-xs">
+            Belum ada file yang dirender. Klik <strong class="text-emerald-400">+ Render & Download</strong> di tab Create untuk mulai mengekspor aset Adobe Stock.
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = state.exportHistory
+        .map(
+          (exp) => `
+          <div class="rounded-xl bg-studio-card border border-studio-border p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    ${escapeHtml(exp.type)}
+                  </span>
+                  <span class="text-xs font-bold text-white truncate">${escapeHtml(exp.filename)}</span>
+                </div>
+                <div class="text-[11px] font-mono text-slate-400 mt-1">
+                  ${escapeHtml(exp.specs)} • Ukuran: ${escapeHtml(exp.sizeLabel)} • ${escapeHtml(exp.timestamp)}
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                ${
+                  exp.isVideo
+                    ? `<button type="button" onclick="previewExportedVideo('${exp.id}')"
+                        class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+                        ▶ Preview Hasil
+                      </button>`
+                    : ''
+                }
+                <button type="button" onclick="downloadMetadataCSV('${exp.id}')"
+                  class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-cyan-300 text-xs font-semibold">
+                  ⬇ CSV
+                </button>
+                <a href="${exp.url}" download="${escapeHtml(exp.filename)}"
+                  class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">
+                  ⬇ Unduh Ulang
+                </a>
+              </div>
+            </div>
+
+            <!-- Ready-to-Copy Content Title & Keywords for this Rendered File -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-2.5 pt-2.5 border-t border-studio-border/80">
+              <div class="rounded-lg bg-[#0B0D17] border border-studio-border p-2.5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Content title</span>
+                  <button type="button" onclick="copyQueueMetadata('${exp.id}', 'title', this)"
+                    class="px-2 py-0.5 rounded bg-slate-800 hover:bg-indigo-600 border border-slate-600 text-[10px] font-semibold text-slate-200 hover:text-white transition-colors">
+                    Copy Title
+                  </button>
+                </div>
+                <input type="text" readonly value="${escapeHtml(exp.contentTitle || '')}"
+                  class="w-full bg-transparent text-xs text-white outline-none font-medium" />
+              </div>
+
+              <div class="rounded-lg bg-[#0B0D17] border border-studio-border p-2.5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Keywords</span>
+                  <button type="button" onclick="copyQueueMetadata('${exp.id}', 'keywords', this)"
+                    class="px-2 py-0.5 rounded bg-slate-800 hover:bg-indigo-600 border border-slate-600 text-[10px] font-semibold text-slate-200 hover:text-white transition-colors">
+                    Copy Keywords
+                  </button>
+                </div>
+                <textarea readonly rows="2"
+                  class="w-full bg-transparent text-[11px] font-mono text-slate-300 outline-none resize-none leading-relaxed">${escapeHtml(exp.keywords || '')}</textarea>
+              </div>
+            </div>
+          </div>`
+        )
+        .join('');
+    }
+
+    function previewExportedVideo(expId) {
+      const item = state.exportHistory.find((e) => e.id === expId);
+      if (!item) return;
+      const box = document.getElementById('queue-video-player-box');
+      const title = document.getElementById('queue-player-title');
+      const video = document.getElementById('queue-video-element');
+      title.textContent = `Preview Hasil: ${item.filename} (${item.sizeLabel})`;
+      video.src = item.url;
+      box.classList.remove('hidden');
+      video.play().catch(() => {});
+    }
+
+    function closeQueueVideoPlayer() {
+      const box = document.getElementById('queue-video-player-box');
+      const video = document.getElementById('queue-video-element');
+      video.pause();
+      video.src = '';
+      box.classList.add('hidden');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
